@@ -10,13 +10,22 @@ fi
 timedatectl set-timezone Asia/Shanghai
 v2uuid=$(cat /proc/sys/kernel/random/uuid)
 
-read -t 15 -p "回车或等待15秒为默认端口443，或者自定义端口请输入(1-65535)："  getPort
-if [ -z $getPort ];then
-    getPort=443
-fi
+getPort() {
+    # 生成一个随机端口号
+    local port
+    port=$(shuf -i 1024-49151 -n 1)
+    # 检查端口是否被占用，如果被占用则重新生成
+    while nc -z localhost "$port"; do
+        port=$(shuf -i 1024-49151 -n 1)
+    done
+    echo "$port"
+}
 
-getIP(){
-    local serverIP=
+PORT=$(getPort)
+echo "使用端口号: $PORT"
+
+getIP() {
+    local serverIP
     serverIP=$(curl -s -4 http://www.cloudflare.com/cdn-cgi/trace | grep "ip" | awk -F "[=]" '{print $2}')
     if [[ -z "${serverIP}" ]]; then
         serverIP=$(curl -s -6 http://www.cloudflare.com/cdn-cgi/trace | grep "ip" | awk -F "[=]" '{print $2}')
@@ -24,7 +33,7 @@ getIP(){
     echo "${serverIP}"
 }
 
-install_xray(){ 
+install_xray() {
     if [ -f "/usr/bin/apt-get" ]; then
         apt-get update -y && apt-get upgrade -y
         apt-get install -y gawk curl
@@ -36,16 +45,16 @@ install_xray(){
     bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
 }
 
-reconfig(){
+reconfig() {
     reX25519Key=$(/usr/local/bin/xray x25519)
     rePrivateKey=$(echo "${reX25519Key}" | head -1 | awk '{print $3}')
     rePublicKey=$(echo "${reX25519Key}" | tail -n 1 | awk '{print $3}')
 
-cat >/usr/local/etc/xray/config.json<<EOF
+    cat >/usr/local/etc/xray/config.json <<EOF
 {
     "inbounds": [
         {
-            "port": $getPort,
+            "port": $PORT,
             "protocol": "vless",
             "settings": {
                 "clients": [
@@ -97,12 +106,12 @@ EOF
     systemctl enable xray.service && systemctl restart xray.service
     rm -f tcp-wss.sh install-release.sh reality.sh
 
-cat >/usr/local/etc/xray/reclient.json<<EOF
+    cat >/usr/local/etc/xray/reclient.json <<EOF
 {
 ===========配置参数=============
 代理模式：vless
 地址：$(getIP)
-端口：${getPort}
+端口：${PORT}
 UUID：${v2uuid}
 流控：xtls-rprx-vision
 传输协议：tcp
@@ -111,7 +120,7 @@ Public key：${rePublicKey}
 SNI: www.amazon.com
 shortIds: 88
 ====================================
-vless://${v2uuid}@$(getIP):${getPort}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.amazon.com&fp=chrome&pbk=${rePublicKey}&sid=88&type=tcp&headerType=none#1024-reality
+vless://${v2uuid}@$(getIP):${PORT}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.amazon.com&fp=chrome&pbk=${rePublicKey}&sid=88&type=tcp&headerType=none#1024-reality
 
 }
 EOF
@@ -119,14 +128,14 @@ EOF
     clear
 }
 
-client_re(){
+client_re() {
     echo
     echo "安装已经完成"
     echo
     echo "===========reality配置参数============"
     echo "代理模式：vless"
     echo "地址：$(getIP)"
-    echo "端口：${getPort}"
+    echo "端口：${PORT}"
     echo "UUID：${v2uuid}"
     echo "流控：xtls-rprx-vision"
     echo "传输协议：tcp"
@@ -135,7 +144,7 @@ client_re(){
     echo "SNI: www.amazon.com"
     echo "shortIds: 88"
     echo "===================================="
-    echo "vless://${v2uuid}@$(getIP):${getPort}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.amazon.com&fp=chrome&pbk=${rePublicKey}&sid=88&type=tcp&headerType=none#1024-reality"
+    echo "vless://${v2uuid}@$(getIP):${PORT}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.amazon.com&fp=chrome&pbk=${rePublicKey}&sid=88&type=tcp&headerType=none#1024-reality"
     echo
 }
 
