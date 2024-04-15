@@ -23,7 +23,6 @@ getPort() {
 
 
 PORT=$(getPort)
-echo "使用端口号: $PORT"
 
 getIP() {
     local serverIP
