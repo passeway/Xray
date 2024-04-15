@@ -1,5 +1,4 @@
-#!/bin/sh
-# forum: https://1024.day
+#!/bin/bash
 
 if [[ $EUID -ne 0 ]]; then
     clear
