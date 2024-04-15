@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # forum: https://1024.day
 
 if [[ $EUID -ne 0 ]]; then
