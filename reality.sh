@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # forum: https://1024.day
 
 if [[ $EUID -ne 0 ]]; then
@@ -11,12 +11,12 @@ timedatectl set-timezone Asia/Shanghai
 v2uuid=$(cat /proc/sys/kernel/random/uuid)
 
 getPort() {
-    # 生成一个随机端口号
+    # 生成一个随机端口号，并将输出重定向到/dev/null
     local port
-    port=$(shuf -i 1024-49151 -n 1)
+    port=$(shuf -i 1024-49151 -n 1 2>/dev/null)
     # 检查端口是否被占用，如果被占用则重新生成
     while nc -z localhost "$port"; do
-        port=$(shuf -i 1024-49151 -n 1)
+        port=$(shuf -i 1024-49151 -n 1 2>/dev/null)
     done
     echo "$port"
 }
@@ -103,6 +103,9 @@ reconfig() {
 }
 EOF
 
+    # 获取IP所在国家
+    IP_COUNTRY=$(curl -s http://ipinfo.io/$HOST_IP/country)
+
     systemctl enable xray.service && systemctl restart xray.service
     rm -f tcp-wss.sh install-release.sh reality.sh
 
@@ -120,7 +123,7 @@ Public key：${rePublicKey}
 SNI: www.amazon.com
 shortIds: 88
 ====================================
-vless://${v2uuid}@$(getIP):${PORT}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.amazon.com&fp=chrome&pbk=${rePublicKey}&sid=88&type=tcp&headerType=none#1024-reality
+vless://${v2uuid}@$(getIP):${PORT}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.amazon.com&fp=chrome&pbk=${rePublicKey}&sid=88&type=tcp&headerType=none#$IP_COUNTRY
 
 }
 EOF
@@ -144,7 +147,7 @@ client_re() {
     echo "SNI: www.amazon.com"
     echo "shortIds: 88"
     echo "===================================="
-    echo "vless://${v2uuid}@$(getIP):${PORT}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.amazon.com&fp=chrome&pbk=${rePublicKey}&sid=88&type=tcp&headerType=none#1024-reality"
+    echo "vless://${v2uuid}@$(getIP):${PORT}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.amazon.com&fp=chrome&pbk=${rePublicKey}&sid=88&type=tcp&headerType=none#$IP_COUNTRY"
     echo
 }
 
