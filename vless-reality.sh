@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 if [[ $EUID -ne 0 ]]; then
     clear
     echo "Error: This script must be run as root!" 1>&2
@@ -18,12 +17,12 @@ getPort() {
     while nc -z localhost "$port"; do
         port=$(shuf -i 1024-49151 -n 1 2>/dev/null)
     done
-    echo "$port"
+    echo "$port" > /dev/null
 }
 
 
 PORT=$(getPort)
-echo "使用端口号: $PORT"
+echo "使用端口号: $PORT" > /dev/null
 
 getIP() {
     local serverIP
@@ -108,7 +107,7 @@ EOF
     IP_COUNTRY=$(curl -s http://ipinfo.io/$HOST_IP/country)
 
     systemctl enable xray.service && systemctl restart xray.service
-    rm -f tcp-wss.sh install-release.sh reality.sh
+    rm -f tcp-wss.sh install-release.sh reality.sh vless-reality.sh
 
     cat >/usr/local/etc/xray/reclient.json <<EOF
 {
