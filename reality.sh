@@ -11,8 +11,8 @@ uninstall_vless_reality() {
 }
 
 echo "请选择操作："
-echo "1. 安装 vless-reality"
-echo "2. 卸载 vless-reality"
+echo "1. 安装vless-reality"
+echo "2. 卸载vless-reality"
 read -p "输入选项: " choice
 
 
