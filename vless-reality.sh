@@ -122,7 +122,7 @@ EOF
     rm -f tcp-wss.sh install-release.sh reality.sh vless-reality.sh
 
     echo "安装已经完成"
-    echo "vless://${v2uuid}@$(getIP):${PORT}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=$random_domain&fp=chrome&pbk=${rePublicKey}&sid=88&type=tcp&headerType=none#IP_COUNTRY"
+    echo "vless://${v2uuid}@$(getIP):${PORT}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=$random_domain&fp=chrome&pbk=${rePublicKey}&sid=88&type=tcp&headerType=none#$IP_COUNTRY"
 }
 
 install_xray
