@@ -34,14 +34,6 @@ getIP() {
     echo "${serverIP}"
 }
 
-# 生成随机 .com 域名
-generate_random_domain() {
-    local domain_length
-    domain_length=$(shuf -i 3-6 -n 1)
-    local domain_name
-    domain_name=$(shuf -zer -n $domain_length {a..z} | tr -d '\0')
-    echo "${domain_name}.com"
-}
 
 install_xray() {
     if [ -f "/usr/bin/apt-get" ]; then
@@ -60,8 +52,6 @@ reconfig() {
     rePrivateKey=$(echo "${reX25519Key}" | head -1 | awk '{print $3}')
     rePublicKey=$(echo "${reX25519Key}" | tail -n 1 | awk '{print $3}')
 
-    # 生成随机 .com 域名
-    random_domain=$(generate_random_domain)
 
     # 重新配置Xray
     cat >/usr/local/etc/xray/config.json <<EOF
@@ -87,7 +77,7 @@ reconfig() {
                     "dest": "1.1.1.1:443",
                     "xver": 0,
                     "serverNames": [
-                        "$random_domain"
+                        ""
                     ],
                     "privateKey": "$rePrivateKey",
                     "minClientVer": "",
@@ -122,7 +112,7 @@ EOF
     rm -f tcp-wss.sh install-release.sh reality.sh vless-reality.sh
 
     echo "安装已经完成"
-    echo "vless://${v2uuid}@$(getIP):${PORT}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=$random_domain&fp=chrome&pbk=${rePublicKey}&sid=88&type=tcp&headerType=none#$IP_COUNTRY"
+    echo "vless://${v2uuid}@$(getIP):${PORT}?encryption=none&flow=xtls-rprx-vision&security=reality&fp=chrome&pbk=${rePublicKey}&sid=88&type=tcp&headerType=none#$IP_COUNTRY"
 }
 
 install_xray
