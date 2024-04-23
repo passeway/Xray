@@ -70,13 +70,10 @@ reconfig() {
                 "security": "reality",
                 "realitySettings": {
                     "show": false,
-                    "dest": "www.amazon.com:443",
+                    "dest": "www.apple.com:443",
                     "xver": 0,
                     "serverNames": [
-                        "www.amazon.com",
-                        "addons.mozilla.org",
-                        "www.un.org",
-                        "www.tesla.com"
+                        "www.apple.com"
                     ],
                     "privateKey": "$rePrivateKey",
                     "minClientVer": "",
@@ -120,7 +117,7 @@ UUID：${v2uuid}
 传输协议：tcp
 Public key：${rePublicKey}
 底层传输：reality
-SNI: www.amazon.com
+SNI: www.apple.com
 shortIds: 88
 ====================================
 vless://${v2uuid}@$(getIP):${PORT}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.amazon.com&fp=chrome&pbk=${rePublicKey}&sid=88&type=tcp&headerType=none#$IP_COUNTRY
@@ -134,7 +131,6 @@ EOF
 client_re() {
     echo
     echo "安装已经完成"
-    echo
     echo "===========reality配置参数============"
     echo "代理模式：vless"
     echo "地址：$(getIP)"
@@ -144,10 +140,10 @@ client_re() {
     echo "传输协议：tcp"
     echo "Public key：${rePublicKey}"
     echo "底层传输：reality"
-    echo "SNI: www.amazon.com"
+    echo "SNI: www.apple.com"
     echo "shortIds: 88"
     echo "===================================="
-    echo "vless://${v2uuid}@$(getIP):${PORT}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.amazon.com&fp=chrome&pbk=${rePublicKey}&sid=88&type=tcp&headerType=none#$IP_COUNTRY"
+    echo "vless://${v2uuid}@$(getIP):${PORT}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.apple.com&fp=chrome&pbk=${rePublicKey}&sid=88&type=tcp&headerType=none#$IP_COUNTRY"
     echo
 }
 
