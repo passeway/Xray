@@ -70,10 +70,10 @@ reconfig() {
                 "security": "reality",
                 "realitySettings": {
                     "show": false,
-                    "dest": "www.apple.com:443",
+                    "dest": "1.1.1.1:443",
                     "xver": 0,
                     "serverNames": [
-                        "www.apple.com"
+                        ""
                     ],
                     "privateKey": "$rePrivateKey",
                     "minClientVer": "",
