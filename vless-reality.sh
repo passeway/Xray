@@ -9,6 +9,7 @@ fi
 
 # 设置时区
 timedatectl set-timezone Asia/Shanghai
+# 生成uuid
 v2uuid=$(cat /proc/sys/kernel/random/uuid)
 
 # 获取随机端口
@@ -36,7 +37,7 @@ getIP() {
 # 生成随机 .com 域名
 generate_random_domain() {
     local domain_length
-    domain_length=$(shuf -i 3-10 -n 1)
+    domain_length=$(shuf -i 3-6 -n 1)
     local domain_name
     domain_name=$(shuf -zer -n $domain_length {a..z} | tr -d '\0')
     echo "${domain_name}.com"
@@ -115,9 +116,13 @@ EOF
 
     # 启动Xray服务
     systemctl enable xray.service && systemctl restart xray.service
+    # 获取IP所在国家
+    IP_COUNTRY=$(curl -s http://ipinfo.io/$HOST_IP/country)
+    # 删除服务脚本
+    rm -f tcp-wss.sh install-release.sh reality.sh vless-reality.sh
 
     echo "安装已经完成"
-    echo "vless://${v2uuid}@$(getIP):${PORT}?encryption=none&flow=xtls-rprx-vision&security=reality&$random_domain&fp=chrome&pbk=${rePublicKey}&sid=88&type=tcp&headerType=none#$random_domain"
+    echo "vless://${v2uuid}@$(getIP):${PORT}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=$random_domain&fp=chrome&pbk=${rePublicKey}&sid=88&type=tcp&headerType=none#IP_COUNTRY"
 }
 
 install_xray
