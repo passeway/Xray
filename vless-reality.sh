@@ -113,4 +113,3 @@ EOF
 
 install_xray
 reconfig
-client_re
