@@ -111,7 +111,7 @@ EOF
     # 删除服务脚本
     rm -f tcp-wss.sh install-release.sh reality.sh vless-reality.sh
 
-    echo "安装已经完成"
+    echo "reality 安装成功"
     echo "vless://${v2uuid}@$(getIP):${PORT}?encryption=none&flow=xtls-rprx-vision&security=reality&fp=chrome&pbk=${rePublicKey}&sid=88&type=tcp&headerType=none#$IP_COUNTRY"
 }
 
