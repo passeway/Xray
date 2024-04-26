@@ -2,50 +2,49 @@
 
 # 确保脚本以root身份运行
 if [[ $EUID -ne 0 ]]; then
+    clear
     echo "Error: This script must be run as root!" 1>&2
     exit 1
 fi
 
-# 严格模式
-set -euo pipefail
+# 设置时区
+timedatectl set-timezone Asia/Shanghai
+# 生成uuid
+v2uuid=$(cat /proc/sys/kernel/random/uuid)
 
-# 捕获中断信号
-trap 'echo "程序已中止"; exit 1' INT TERM
-
-# 函数预加载
+# 获取随机端口
 getPort() {
     local port
     port=$(shuf -i 1024-49151 -n 1 2>/dev/null)
-    while nc -z localhost "$port" >/dev/null; do
+    while nc -z localhost "$port"; do
         port=$(shuf -i 1024-49151 -n 1 2>/dev/null)
     done
     echo "$port"
 }
 
+PORT=$(getPort)
+
+# 获取IP地址
 getIP() {
     local serverIP
-    serverIP=$(curl -fsSL http://ipinfo.io/ip)
+    serverIP=$(curl -s -4 http://www.cloudflare.com/cdn-cgi/trace | grep "ip" | awk -F "[=]" '{print $2}')
+    if [[ -z "${serverIP}" ]]; then
+        serverIP=$(curl -s -6 http://www.cloudflare.com/cdn-cgi/trace | grep "ip" | awk -F "[=]" '{print $2}')
+    fi
     echo "${serverIP}"
 }
 
-generate_random_domain() {
-    local domain_length
-    domain_length=$(shuf -i 3-6 -n 1)
-    local domain_name
-    domain_name=$(shuf -zer -n $domain_length {a..z} | tr -d '\0')
-    echo "${domain_name}.com"
-}
 
 install_xray() {
-    install_pkgs="gawk curl"
-    if command -v apt-get >/dev/null; then
-        apt-get update -y
-        apt-get install -y $install_pkgs
+    if [ -f "/usr/bin/apt-get" ]; then
+        apt-get update -y && apt-get upgrade -y
+        apt-get install -y gawk curl
     else
-        yum update -y
-        yum install -y epel-release $install_pkgs
+        yum update -y && yum upgrade -y
+        yum install -y epel-release
+        yum install -y gawk curl
     fi
-    bash -c "$(curl -fsSL https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
+    bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
 }
 
 reconfig() {
@@ -53,8 +52,8 @@ reconfig() {
     rePrivateKey=$(echo "${reX25519Key}" | head -1 | awk '{print $3}')
     rePublicKey=$(echo "${reX25519Key}" | tail -n 1 | awk '{print $3}')
 
-    random_domain=$(generate_random_domain)
 
+    # 重新配置Xray
     cat >/usr/local/etc/xray/config.json <<EOF
 {
     "inbounds": [
@@ -78,7 +77,7 @@ reconfig() {
                     "dest": "1.1.1.1:443",
                     "xver": 0,
                     "serverNames": [
-                        "$random_domain"
+                        "www.apple.com"
                     ],
                     "privateKey": "$rePrivateKey",
                     "minClientVer": "",
@@ -105,28 +104,16 @@ reconfig() {
 }
 EOF
 
+    # 启动Xray服务
     systemctl enable xray.service && systemctl restart xray.service
-    IP_COUNTRY=$(curl -fsSL http://ipinfo.io/$(getIP)/country)
-
-    log() { echo -e "$1"; }
-    success() { log "\033[32m$1\033[0m"; }
-    success "安装已经完成"
-    success "vless://${v2uuid}@$(getIP):${PORT}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=$random_domain&fp=chrome&pbk=${rePublicKey}&sid=88&type=tcp&headerType=none#$IP_COUNTRY"
-
+    # 获取IP所在国家
+    IP_COUNTRY=$(curl -s http://ipinfo.io/$HOST_IP/country)
+    # 删除服务脚本
     rm -f tcp-wss.sh install-release.sh reality.sh vless-reality.sh
+
+    echo "vless-reality 安装成功"
+    echo "vless://${v2uuid}@$(getIP):${PORT}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.apple.com&fp=chrome&pbk=${rePublicKey}&sid=88&type=tcp&headerType=none#$IP_COUNTRY"
 }
 
-# 设置时区
-timedatectl set-timezone Asia/Shanghai
-
-# 生成uuid
-v2uuid=$(cat /proc/sys/kernel/random/uuid)
-
-# 获取随机端口
-PORT=$(getPort)
-
-# 安装xray
 install_xray
-
-# 重新配置
 reconfig
