@@ -1,27 +1,15 @@
 #!/bin/bash
 
-# 确保脚本以 root 身份运行
+# 确保脚本以root身份运行
 if [[ $EUID -ne 0 ]]; then
     clear
     echo "Error: This script must be run as root!" 1>&2
     exit 1
 fi
 
-# 安装 qrencode
-if ! command -v qrencode &gt; /dev/null; then
-    if [ -f "/usr/bin/apt-get" ]; then
-        apt-get update -y
-        apt-get install -y qrencode
-    else
-        yum update -y
-        yum install -y qrencode
-    fi
-fi
-
 # 设置时区
 timedatectl set-timezone Asia/Shanghai
-
-# 生成 UUID
+# 生成uuid
 v2uuid=$(cat /proc/sys/kernel/random/uuid)
 
 # 获取随机端口
@@ -36,18 +24,19 @@ getPort() {
 
 PORT=$(getPort)
 
-# 获取 IP 地址
+# 获取IP地址
 getIP() {
     local serverIP
-    serverIP=$(curl -s -4 http://www.cloudflare.com/cdn-cgi/trace | grep "ip" | awk -F "=" '{print $2}')
+    serverIP=$(curl -s -4 http://www.cloudflare.com/cdn-cgi/trace | grep "ip" | awk -F "[=]" '{print $2}')
     if [[ -z "${serverIP}" ]]; then
-        serverIP=$(curl -s -6 http://www.cloudflare.com/cdn-cgi/trace | grep "ip" | awk -F "=" '{print $2}')
+        serverIP=$(curl -s -6 http://www.cloudflare.com/cdn-cgi/trace | grep "ip" | awk -F "[=]" '{print $2}')
     fi
     echo "${serverIP}"
 }
 
+
 install_xray() {
-    if [ -f "/usr/bin/apt-get" ];then
+    if [ -f "/usr/bin/apt-get" ]; then
         apt-get update -y && apt-get upgrade -y
         apt-get install -y gawk curl
     else
@@ -61,9 +50,10 @@ install_xray() {
 reconfig() {
     reX25519Key=$(/usr/local/bin/xray x25519)
     rePrivateKey=$(echo "${reX25519Key}" | head -1 | awk '{print $3}')
-    rePublicKey=$(回 "${reX25519Key}" | tail -1 | awk '{print $3}')
+    rePublicKey=$(echo "${reX25519Key}" | tail -n 1 | awk '{print $3}')
 
-    # 重新配置 Xray
+
+    # 重新配置Xray
     cat >/usr/local/etc/xray/config.json <<EOF
 {
     "inbounds": [
@@ -90,6 +80,9 @@ reconfig() {
                         "www.apple.com"
                     ],
                     "privateKey": "$rePrivateKey",
+                    "minClientVer": "",
+                    "maxClientVer": "",
+                    "maxTimeDiff": 0,
                     "shortIds": [
                         "88",
                         "123abc"
@@ -105,23 +98,21 @@ reconfig() {
         },
         {
             "protocol": "blackhole",
-                "tag": "blocked"
-            }
+            "tag": "blocked"
+        }
     ]    
 }
 EOF
 
-    # 启动 Xray 服务
+    # 启动Xray服务
     systemctl enable xray.service && systemctl restart xray.service
+    # 获取IP所在国家
+    IP_COUNTRY=$(curl -s http://ipinfo.io/$HOST_IP/country)
+    # 删除服务脚本
+    rm -f tcp-wss.sh install-release.sh reality.sh vless-reality.sh
 
-    # 生成 VLESS 链接
-    vless_link="vless://${v2uuid}@$(getIP):${PORT}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.apple.com&fp=chrome&pbk=${rePublicKey}&sid=88&type=tcp&headerType=none"
-
-    # 输出 VLESS 链接
-    echo "VLESS 链接: ${vless_link}"
-
-    # 生成二维码并显示在终端，使用较小的尺寸
-    qrencode -t ANSI -s 1 "${vless_link}"
+    echo "vless-reality 安装成功"
+    echo "vless://${v2uuid}@$(getIP):${PORT}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.apple.com&fp=chrome&pbk=${rePublicKey}&sid=88&type=tcp&headerType=none#$IP_COUNTRY"
 }
 
 install_xray
