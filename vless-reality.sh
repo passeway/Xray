@@ -8,7 +8,7 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 # 安装 qrencode
-if ! command -v qrencode &> /dev/null; then
+if ! command -v qrencode &gt; /dev/null; then
     if [ -f "/usr/bin/apt-get" ]; then
         apt-get update -y
         apt-get install -y qrencode
@@ -47,7 +47,7 @@ getIP() {
 }
 
 install_xray() {
-    if [ -f "/usr/bin/apt-get" ]; then
+    if [ -f "/usr/bin/apt-get" ];then
         apt-get update -y && apt-get upgrade -y
         apt-get install -y gawk curl
     else
@@ -61,7 +61,7 @@ install_xray() {
 reconfig() {
     reX25519Key=$(/usr/local/bin/xray x25519)
     rePrivateKey=$(echo "${reX25519Key}" | head -1 | awk '{print $3}')
-    rePublicKey=$(echo "${reX25519Key}" | tail -n 1 | awk '{print $3}')
+    rePublicKey=$(回 "${reX25519Key}" | tail -1 | awk '{print $3}')
 
     # 重新配置 Xray
     cat >/usr/local/etc/xray/config.json <<EOF
@@ -90,8 +90,6 @@ reconfig() {
                         "www.apple.com"
                     ],
                     "privateKey": "$rePrivateKey",
-                    "minClientVer": "",
-                    "maxClientVer": "",
                     "shortIds": [
                         "88",
                         "123abc"
@@ -107,8 +105,8 @@ reconfig() {
         },
         {
             "protocol": "blackhole",
-            "tag": "blocked"
-        }
+                "tag": "blocked"
+            }
     ]    
 }
 EOF
@@ -116,20 +114,14 @@ EOF
     # 启动 Xray 服务
     systemctl enable xray.service && systemctl restart xray.service
 
-    # 获取国家信息
-    IP_COUNTRY=$(curl -s http://ipinfo.io/$(getIP)/country)
-
-    # 删除临时文件
-    rm -f tcp-wss.sh install-release.sh reality.sh vless-reality.sh
-
     # 生成 VLESS 链接
-    vless_link="vless://${v2uuid}@$(getIP):${PORT}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.apple.com&fp=chrome&pbk=${rePublicKey}&sid=88&type=tcp&headerType=none#$IP_COUNTRY"
+    vless_link="vless://${v2uuid}@$(getIP):${PORT}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.apple.com&fp=chrome&pbk=${rePublicKey}&sid=88&type=tcp&headerType=none"
 
     # 输出 VLESS 链接
     echo "VLESS 链接: ${vless_link}"
 
-    # 生成二维码并显示在终端
-    qrencode -t ANSI256 "${vless_link}"
+    # 生成二维码并显示在终端，使用较小的尺寸
+    qrencode -t ANSI -s 1 "${vless_link}"
 }
 
 install_xray
