@@ -61,12 +61,12 @@ reconfig() {
     },
     "inbounds": [
         {
-            "port": $PORT, 
+            "port": "${PORT}",
             "protocol": "vless",
             "settings": {
                 "clients": [
                     {
-                        "id": "$v2uuid", 
+                        "id": "${v2uuid}",
                         "flow": "xtls-rprx-vision"
                     }
                 ],
@@ -78,12 +78,12 @@ reconfig() {
                 "realitySettings": {
                     "dest": "1.1.1.1:443",
                     "serverNames": [
-                        "www.tesla.com"    
+                        "www.tesla.com"
                     ],
-                    "privateKey": "$rePrivateKey", 
+                    "privateKey": "${rePrivateKey}",
                     "shortIds": [
-                        "", 
-                        "123abc" 
+                        "",
+                        "123abc"
                     ]
                 }
             },
@@ -103,15 +103,15 @@ reconfig() {
             "settings": {
                 "clients": [
                     {
-                        "id": "$v2uuid", 
-                        "alterId": 0 
+                        "id": "${v2uuid}",
+                        "alterId": 0
                     }
                 ]
             },
             "streamSettings": {
                 "network": "ws",
                 "wsSettings": {
-                    "path": "/?ed=2056"  
+                    "path": "/?ed=2056"
                 }
             },
             "sniffing": {
