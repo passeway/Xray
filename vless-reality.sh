@@ -56,14 +56,17 @@ reconfig() {
     # 重新配置Xray
     cat >/usr/local/etc/xray/config.json <<EOF
 {
+    "log": {
+        "loglevel": "debug"
+    },
     "inbounds": [
         {
-            "port": $PORT,
+            "port": $PORT, 
             "protocol": "vless",
             "settings": {
                 "clients": [
                     {
-                        "id": "$v2uuid",
+                        "id": "$v2uuid", 
                         "flow": "xtls-rprx-vision"
                     }
                 ],
@@ -73,21 +76,25 @@ reconfig() {
                 "network": "tcp",
                 "security": "reality",
                 "realitySettings": {
-                    "show": false,
                     "dest": "1.1.1.1:443",
-                    "xver": 0,
                     "serverNames": [
-                        "www.apple.com"
+                        "www.tesla.com"    
                     ],
-                    "privateKey": "$rePrivateKey",
-                    "minClientVer": "",
-                    "maxClientVer": "",
-                    "maxTimeDiff": 0,
+                    "privateKey": "$rePrivateKey", 
                     "shortIds": [
-                        "88",
-                        "123abc"
+                        "", 
+                        "123abc" 
                     ]
                 }
+            },
+            "sniffing": {
+                "enabled": true,
+                "destOverride": [
+                    "http",
+                    "tls",
+                    "quic"
+                ],
+                "routeOnly": true
             }
         }
     ],
@@ -95,12 +102,8 @@ reconfig() {
         {
             "protocol": "freedom",
             "tag": "direct"
-        },
-        {
-            "protocol": "blackhole",
-            "tag": "blocked"
         }
-    ]    
+    ]
 }
 EOF
 
@@ -112,7 +115,7 @@ EOF
     rm -f tcp-wss.sh install-release.sh reality.sh vless-reality.sh
 
     echo "vless-reality 安装成功"
-    echo "vless://${v2uuid}@$(getIP):${PORT}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.apple.com&fp=chrome&pbk=${rePublicKey}&sid=88&type=tcp&headerType=none#$IP_COUNTRY"
+    echo "vless://${v2uuid}@$(getIP):${PORT}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.tesla.com&fp=chrome&pbk=${rePublicKey}&sid=123abc&type=tcp&headerType=none#$IP_COUNTRY"
 }
 
 install_xray
