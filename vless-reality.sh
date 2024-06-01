@@ -96,6 +96,31 @@ reconfig() {
                 ],
                 "routeOnly": true
             }
+        },
+        {
+            "port": 8880,
+            "protocol": "vmess",
+            "settings": {
+                "clients": [
+                    {
+                        "id": "$v2uuid", 
+                        "alterId": 0 
+                    }
+                ]
+            },
+            "streamSettings": {
+                "network": "ws",
+                "wsSettings": {
+                    "path": "/?ed=2056"  
+                }
+            },
+            "sniffing": {
+                "enabled": true,
+                "destOverride": [
+                    "http",
+                    "tls"
+                ]
+            }
         }
     ],
     "outbounds": [
