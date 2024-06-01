@@ -7,7 +7,7 @@
 
 ## 一键脚本
 ```bash
-   bash <(curl -Ls https://raw.githubusercontent.com/passeway/reality/main/reality.sh)
+bash <(curl -Ls https://raw.githubusercontent.com/passeway/reality/main/reality.sh)
 ```
 ## 详细说明
 
