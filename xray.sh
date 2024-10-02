@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 确保脚本以root身份运行
-if [[ $EUID -ne 0 ]]; then
+if [[ ${EUID} -ne 0 ]]; then
     clear
     echo "Error: This script must be run as root!" 1>&2
     exit 1
@@ -9,6 +9,7 @@ fi
 
 # 设置时区
 timedatectl set-timezone Asia/Shanghai
+
 # 生成uuid
 v2uuid=$(cat /proc/sys/kernel/random/uuid)
 
@@ -16,10 +17,10 @@ v2uuid=$(cat /proc/sys/kernel/random/uuid)
 getPort() {
     local port
     port=$(shuf -i 1024-49151 -n 1 2>/dev/null)
-    while nc -z localhost "$port"; do
+    while nc -z localhost "${port}"; do
         port=$(shuf -i 1024-49151 -n 1 2>/dev/null)
     done
-    echo "$port"
+    echo "${port}"
 }
 
 PORT=$(getPort)
@@ -33,7 +34,6 @@ getIP() {
     fi
     echo "${serverIP}"
 }
-
 
 install_xray() {
     if [ -f "/usr/bin/apt-get" ]; then
@@ -51,7 +51,6 @@ reconfig() {
     reX25519Key=$(/usr/local/bin/xray x25519)
     rePrivateKey=$(echo "${reX25519Key}" | head -1 | awk '{print $3}')
     rePublicKey=$(echo "${reX25519Key}" | tail -n 1 | awk '{print $3}')
-
 
     # 重新配置Xray
     cat >/usr/local/etc/xray/config.json <<EOF
@@ -111,7 +110,7 @@ reconfig() {
             "streamSettings": {
                 "network": "ws",
                 "wsSettings": {
-                    "path": "/?ed=2056"
+                    "path": "/?ed=2560"
                 }
             },
             "sniffing": {
@@ -138,13 +137,15 @@ EOF
 
     # 启动Xray服务
     systemctl enable xray.service && systemctl restart xray.service
+    # 获取本机IP地址
+    HOST_IP=$(getIP)
     # 获取IP所在国家
-    IP_COUNTRY=$(curl -s http://ipinfo.io/$HOST_IP/country)
+    IP_COUNTRY=$(curl -s http://ipinfo.io/${HOST_IP}/country)
     # 删除服务脚本
     rm -f tcp-wss.sh install-release.sh reality.sh vless-reality.sh
 
     echo "vless-reality 安装成功"
-    echo "vless://${v2uuid}@$(getIP):${PORT}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.tesla.com&fp=chrome&pbk=${rePublicKey}&sid=123abc&type=tcp&headerType=none#$IP_COUNTRY"
+    echo "vless://${v2uuid}@${HOST_IP}:${PORT}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.tesla.com&fp=chrome&pbk=${rePublicKey}&sid=123abc&type=tcp&headerType=none#${IP_COUNTRY}"
 }
 
 install_xray
