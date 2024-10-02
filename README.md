@@ -1,5 +1,3 @@
-https://raw.githubusercontent.com/passeway/Xray/refs/heads/main/Xray.sh
-
 ## 终端预览
 
 ![preview](预览.png)
