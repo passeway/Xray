@@ -4,7 +4,7 @@
 
 ## 一键脚本
 ```
-bash <(curl -fsSL https://raw.githubusercontent.com/passeway/Xray/main/Xray.sh)
+bash <(curl -fsSL https://gitlab.com/passeway/Xray/raw/main/Xray.sh)
 ```
 ## 详细说明
 
@@ -29,7 +29,21 @@ sudo systemctl restart xray
 ```
 sudo systemctl status xray
 ```
+重载 Xray.service
+```
+sudo systemctl daemon-reload
+```
+修改 Xray.service
+```
+nano /etc/systemd/system/xray.service
+```
+
+检查 config.json 
+```
+/usr/local/bin/xray run -config /usr/local/etc/xray/config.json
+```
 申请 Acme 证书
+
 ```
 sudo apt update
 sudo apt install certbot
@@ -45,10 +59,6 @@ cp /etc/letsencrypt/live/example.com/privkey.pem /usr/local/etc/xray/privkey.pem
 sudo chmod 777 /usr/local/etc/xray/fullchain.pem
 sudo chmod 777 /usr/local/etc/xray/privkey.pem
 ```
-重新加载 systemd 配置
-```
-sudo systemctl daemon-reload
-```
-## 项目地址：https://github.com/xtls/xray-core
 
+## 项目地址：https://github.com/xtls/xray-core
 
