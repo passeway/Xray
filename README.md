@@ -41,6 +41,10 @@ sudo certbot certonly --standalone -d example.com
 cp /etc/letsencrypt/live/example.com/fullchain.pem /usr/local/etc/xray/fullchain.pem
 cp /etc/letsencrypt/live/example.com/privkey.pem /usr/local/etc/xray/privkey.pem
 ```
+```
+sudo chmod 777 /usr/local/etc/xray/fullchain.pem
+sudo chmod 777 /usr/local/etc/xray/privkey.pem
+```
 重新加载 systemd 配置
 ```
 sudo systemctl daemon-reload
