@@ -54,10 +54,10 @@
     sudo certbot certonly --standalone -d example.com
 
 复制 fullchain
-
-    cp /etc/letsencrypt/live/example.com/fullchain.pem /usr/local/etc/xray/fullchain.pem
-    cp /etc/letsencrypt/live/example.com/privkey.pem /usr/local/etc/xray/privkey.pem
-    
+```
+cp /etc/letsencrypt/live/example.com/fullchain.pem /usr/local/etc/xray/fullchain.pem
+cp /etc/letsencrypt/live/example.com/privkey.pem /usr/local/etc/xray/privkey.pem
+```   
 ```
 sudo chmod 777 /usr/local/etc/xray/fullchain.pem
 sudo chmod 777 /usr/local/etc/xray/privkey.pem
