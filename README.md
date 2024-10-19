@@ -4,7 +4,7 @@
 
 ## 一键脚本
 ```
-bash <(curl -fsSL xray-eta.vercel.app)
+bash <(curl -fsSL xray-iota.vercel.app)
 ```
 ## 详细说明
 
@@ -59,8 +59,8 @@ cp /etc/letsencrypt/live/example.com/fullchain.pem /usr/local/etc/xray/fullchain
 cp /etc/letsencrypt/live/example.com/privkey.pem /usr/local/etc/xray/privkey.pem
 ```   
 ```
-sudo chmod 777 /usr/local/etc/xray/fullchain.pem
-sudo chmod 777 /usr/local/etc/xray/privkey.pem
+sudo chmod 755 /usr/local/etc/xray/fullchain.pem
+sudo chmod 755 /usr/local/etc/xray/privkey.pem
 ```
 
 
