@@ -4,7 +4,7 @@
 
 ## 一键脚本
 ```
-bash <(curl -fsSL https://gitlab.com/passeway/Xray/raw/main/Xray.sh)
+bash <(curl -fsSL xray-eta.vercel.app)
 ```
 ## 详细说明
 
