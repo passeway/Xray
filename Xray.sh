@@ -55,6 +55,7 @@ show_menu() {
     echo "4. 停止 Xray 服务"
     echo "5. 重启 Xray 服务"
     echo "6. 检查 Xray 状态"
+    echo "7. 查看 Xray 配置"
     echo "0. 退出"
     echo -e "${GREEN}=====================${RESET}"
     read -p "请输入选项编号: " choice
@@ -74,6 +75,7 @@ while true; do
         4) sudo systemctl stop xray ;;
         5) sudo systemctl restart xray ;;
         6) sudo systemctl status xray ;;
+        7) cat /usr/local/etc/xray/config.txt ;;
         0)
             echo -e "${GREEN}已退出 Xray 管理工具${RESET}"
             exit 0
