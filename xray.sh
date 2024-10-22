@@ -226,8 +226,17 @@ EOF
     # 获取IP所在国家
     IP_COUNTRY=$(curl -s http://ipinfo.io/${HOST_IP}/country)
     # 删除服务脚本
-    rm -f tcp-wss.sh install-release.sh 
+    rm -f tcp-wss.sh install-release.sh
+    # 生成客户端配置信息
+    cat << EOF > /usr/local/etc/xray/config.txt
+    
+    echo "${IP_COUNTRY} = ss, ${HOST_IP}, ${sport}, encrypt-method=2022-blake3-aes-128-gcm, password=${psk}, udp-relay=true"
 
+    echo "${IP_COUNTRY} = vmess, example.com, 8880, username=${v2uuid}, ws=true, ws-path=/?ed=2560, ws-headers=Host:"example.com", vmess-aead=true"
+
+    echo "vless://${v2uuid}@${HOST_IP}:${PORT}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.tesla.com&fp=chrome&pbk=${rePublicKey}&sid=123abc&type=tcp&headerType=none#${IP_COUNTRY}"
+    EOF
+    
     echo "Xray 安装成功"
     echo ""
     echo "${IP_COUNTRY} = ss, ${HOST_IP}, ${sport}, encrypt-method=2022-blake3-aes-128-gcm, password=${psk}, udp-relay=true"
