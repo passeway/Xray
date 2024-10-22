@@ -26,16 +26,26 @@ WARP_private=$(echo "$WARP_private")
 WARP_Reserved=$(echo "$WARP_Reserved")
 
 # 获取随机端口
-getPort() {
-    local port
-    port=$(shuf -i 1024-49151 -n 1 2>/dev/null)
-    while nc -z localhost "${port}"; do
-        port=$(shuf -i 1024-49151 -n 1 2>/dev/null)
+getPorts() {
+    local port1 port2
+    port1=$(shuf -i 1024-49151 -n 1 2>/dev/null)
+    while nc -z localhost "${port1}"; do
+        port1=$(shuf -i 1024-49151 -n 1 2>/dev/null)
     done
-    echo "${port}"
+
+    port2=$(shuf -i 1024-49151 -n 1 2>/dev/null)
+    while nc -z localhost "${port2}" || [ "${port2}" -eq "${port1}" ]; do
+        port2=$(shuf -i 1024-49151 -n 1 2>/dev/null)
+    done
+
+    echo "${port1} ${port2}"
 }
 
-PORT=$(getPort)
+# 获取两个随机端口
+PORTS=($(getPorts))
+PORT1=${PORTS[0]}
+PORT2=${PORTS[1]}
+
 
 # 获取IP地址
 getIP() {
@@ -100,7 +110,7 @@ reconfig() {
   },
   "inbounds": [
     {
-      "port": "${PORT}",
+      "port": "${PORT1}",
       "protocol": "vless",
       "settings": {
         "clients": [
@@ -137,7 +147,7 @@ reconfig() {
       }
     },
     {
-      "port": 1234,
+      "port": ${PORT2},
       "protocol": "shadowsocks",
       "settings": {
         "method": "2022-blake3-aes-128-gcm",
@@ -216,11 +226,11 @@ EOF
     rm -f tcp-wss.sh install-release.sh
     # 生成客户端配置信息
     cat << EOF > /usr/local/etc/xray/config.txt
-${IP_COUNTRY} = ss, ${HOST_IP}, ${sport}, encrypt-method=2022-blake3-aes-128-gcm, password=${psk}, udp-relay=true
+${IP_COUNTRY} = ss, ${HOST_IP}, ${PORT2}, encrypt-method=2022-blake3-aes-128-gcm, password=${psk}, udp-relay=true
 
 ${IP_COUNTRY} = vmess, example.com, 8880, username=${v2uuid}, ws=true, ws-path=/?ed=2560, ws-headers=Host:"example.com", vmess-aead=true
 
-vless://${v2uuid}@${HOST_IP}:${PORT}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.tesla.com&fp=chrome&pbk=${rePublicKey}&sid=123abc&type=tcp&headerType=none#${IP_COUNTRY}
+vless://${v2uuid}@${HOST_IP}:${PORT1}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.tesla.com&fp=chrome&pbk=${rePublicKey}&sid=123abc&type=tcp&headerType=none#${IP_COUNTRY}
 EOF
     
     echo "Xray 安装成功"
