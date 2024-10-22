@@ -11,7 +11,7 @@ RESET='\033[0m'
 
 # 函数用于安装 vless-reality
 install_vless_reality() {
-    curl -sS -o xray.sh https://gitlab.com/passeway/Xray/-/raw/main/xray.sh && chmod +x xray.sh && ./xray.sh
+   bash <(curl -fsSL https://raw.githubusercontent.com/passeway/Xray/refs/heads/main/xray.sh)
 }
 
 # 函数用于卸载 vless-reality
