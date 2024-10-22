@@ -13,6 +13,9 @@ timedatectl set-timezone Asia/Shanghai
 # 生成uuid
 v2uuid=$(cat /proc/sys/kernel/random/uuid)
 
+#生成base64
+psk=$(openssl rand -base64 16)
+
 # 下载并执行脚本，将输出导入当前shell环境
 eval "$(curl -fsSL https://raw.githubusercontent.com/passeway/sing-box/main/wireguard.sh)"
 
@@ -31,6 +34,18 @@ getPort() {
         port=$(shuf -i 1024-49151 -n 1 2>/dev/null)
     done
     echo "${port}"
+}
+
+PORT=$(getPort)
+
+# 获取随机端口
+getPort() {
+    local port
+    sport=$(shuf -i 1024-49151 -n 1 2>/dev/null)
+    while nc -z localhost "${sport}"; do
+        port=$(shuf -i 1024-49151 -n 1 2>/dev/null)
+    done
+    echo "${sport}"
 }
 
 PORT=$(getPort)
@@ -135,6 +150,15 @@ reconfig() {
       }
     },
     {
+      "port": 1234,
+      "protocol": "shadowsocks",
+      "settings": {
+        "method": "2022-blake3-aes-128-gcm",
+        "password": "${psk}",
+        "network": "tcp,udp"
+      }
+    },
+    {
       "port": 8880,
       "protocol": "vmess",
       "settings": {
@@ -205,6 +229,8 @@ EOF
     rm -f tcp-wss.sh install-release.sh 
 
     echo "Xray 安装成功"
+    echo ""
+    echo "${IP_COUNTRY} = ss, ${HOST_IP}, ${sport}, encrypt-method=2022-blake3-aes-128-gcm, password=${psk}, udp-relay=true"
     echo ""
     echo "${IP_COUNTRY} = vmess, example.com, 8880, username=${v2uuid}, ws=true, ws-path=/?ed=2560, ws-headers=Host:"example.com", vmess-aead=true"
     echo ""
