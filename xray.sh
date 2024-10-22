@@ -13,6 +13,16 @@ timedatectl set-timezone Asia/Shanghai
 # 生成uuid
 v2uuid=$(cat /proc/sys/kernel/random/uuid)
 
+# 下载并执行脚本，将输出导入当前shell环境
+eval "$(curl -fsSL https://raw.githubusercontent.com/passeway/sing-box/main/wireguard.sh)"
+
+# 提取变量
+WARP_IPV4=$(echo "$WARP_IPV4")
+WARP_IPV6=$(echo "$WARP_IPV6")
+WARP_private=$(echo "$WARP_private")
+WARP_Reserved=$(echo "$WARP_Reserved")
+
+
 # 获取随机端口
 getPort() {
     local port
@@ -55,83 +65,133 @@ reconfig() {
     # 重新配置Xray
     cat >/usr/local/etc/xray/config.json <<EOF
 {
-    "log": {
-        "loglevel": "debug"
-    },
-    "inbounds": [
-        {
-            "port": "${PORT}",
-            "protocol": "vless",
-            "settings": {
-                "clients": [
-                    {
-                        "id": "${v2uuid}",
-                        "flow": "xtls-rprx-vision"
-                    }
-                ],
-                "decryption": "none"
-            },
-            "streamSettings": {
-                "network": "tcp",
-                "security": "reality",
-                "realitySettings": {
-                    "dest": "1.1.1.1:443",
-                    "serverNames": [
-                        "www.tesla.com"
-                    ],
-                    "privateKey": "${rePrivateKey}",
-                    "shortIds": [
-                        "",
-                        "123abc"
-                    ]
-                }
-            },
-            "sniffing": {
-                "enabled": true,
-                "destOverride": [
-                    "http",
-                    "tls",
-                    "quic"
-                ],
-                "routeOnly": true
-            }
-        },
-        {
-            "port": 8880,
-            "protocol": "vmess",
-            "settings": {
-                "clients": [
-                    {
-                        "id": "${v2uuid}",
-                        "alterId": 0
-                    }
-                ]
-            },
-            "streamSettings": {
-                "network": "ws",
-                "wsSettings": {
-                    "path": "/?ed=2560"
-                }
-            },
-            "sniffing": {
-                "enabled": true,
-                "destOverride": [
-                    "http",
-                    "tls"
-                ]
-            }
-        }
-    ],
-    "outbounds": [
-        {
-            "protocol": "freedom",
-            "tag": "direct"
-        },
-        {
-            "protocol": "blackhole",
-            "tag": "block"
-        }
+  "log": {
+    "loglevel": "debug"
+  },
+  "dns": {
+    "servers": [
+      "https://1.1.1.1/dns-query"
     ]
+  },
+  "routing": {
+    "domainStrategy": "IPIfNonMatch",
+    "rules": [
+      {
+        "domain": [
+          "geosite:openai"
+        ],
+        "outboundTag": "warp"
+      },
+      {
+        "domain": [
+          "geosite:netflix"
+        ],
+        "outboundTag": "warp"
+      },
+      {
+        "domain": [
+          "geosite:disney"
+        ],
+        "outboundTag": "warp"
+      }
+    ]
+  },
+  "inbounds": [
+    {
+      "port": "${PORT}",
+      "protocol": "vless",
+      "settings": {
+        "clients": [
+          {
+            "id": "${v2uuid}",
+            "flow": "xtls-rprx-vision"
+          }
+        ],
+        "decryption": "none"
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "dest": "1.1.1.1:443",
+          "serverNames": [
+            "www.tesla.com"
+          ],
+          "privateKey": "${rePrivateKey}",
+          "shortIds": [
+            "",
+            "123abc"
+          ]
+        }
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls",
+          "quic"
+        ],
+        "routeOnly": true
+      }
+    },
+    {
+      "port": 8880,
+      "protocol": "vmess",
+      "settings": {
+        "clients": [
+          {
+            "id": "${v2uuid}",
+            "alterId": 0
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "ws",
+        "wsSettings": {
+          "path": "/?ed=2560"
+        }
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls"
+        ]
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "protocol": "freedom",
+      "settings": {
+        "domainStrategy": "UseIP"
+      },
+      "tag": "direct"
+    },
+    {
+      "protocol": "wireguard",
+      "settings": {
+        "secretKey": "${WARP_private}",
+        "address": [
+          "172.16.0.2/32",
+          "${WARP_IPV6}/128"
+        ],
+        "peers": [
+          {
+            "publicKey": "bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo=",
+            "allowedIPs": [
+              "0.0.0.0/0",
+              "::/0"
+            ],
+            "endpoint": "${WARP_IPV4}:2408"
+          }
+        ],
+        "reserved": [${WARP_Reserved}],
+        "mtu": 1280
+      },
+      "tag": "warp"
+    }
+  ]
 }
 EOF
 
