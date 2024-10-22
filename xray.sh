@@ -202,9 +202,12 @@ EOF
     # 获取IP所在国家
     IP_COUNTRY=$(curl -s http://ipinfo.io/${HOST_IP}/country)
     # 删除服务脚本
-    rm -f tcp-wss.sh install-release.sh reality.sh vless-reality.sh
+    rm -f tcp-wss.sh install-release.sh 
 
-    echo "vless-reality 安装成功"
+    echo "Xray 安装成功"
+    echo ""
+    echo "${IP_COUNTRY} = vmess, example.com, ${PORT}, username=${v2uuid}, ws=true, ws-path=/?ed=2560, ws-headers=Host:"example.com", vmess-aead=true"
+    echo ""
     echo "vless://${v2uuid}@${HOST_IP}:${PORT}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.tesla.com&fp=chrome&pbk=${rePublicKey}&sid=123abc&type=tcp&headerType=none#${IP_COUNTRY}"
 }
 
