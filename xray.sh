@@ -13,7 +13,7 @@ timedatectl set-timezone Asia/Shanghai
 # 生成uuid
 v2uuid=$(cat /proc/sys/kernel/random/uuid)
 
-#生成base64
+# 生成base64
 psk=$(openssl rand -base64 16)
 
 # 下载并执行脚本，将输出导入当前shell环境
@@ -25,7 +25,6 @@ WARP_IPV6=$(echo "$WARP_IPV6")
 WARP_private=$(echo "$WARP_private")
 WARP_Reserved=$(echo "$WARP_Reserved")
 
-
 # 获取随机端口
 getPort() {
     local port
@@ -34,18 +33,6 @@ getPort() {
         port=$(shuf -i 1024-49151 -n 1 2>/dev/null)
     done
     echo "${port}"
-}
-
-PORT=$(getPort)
-
-# 获取随机端口
-getPort() {
-    local port
-    sport=$(shuf -i 1024-49151 -n 1 2>/dev/null)
-    while nc -z localhost "${sport}"; do
-        port=$(shuf -i 1024-49151 -n 1 2>/dev/null)
-    done
-    echo "${sport}"
 }
 
 PORT=$(getPort)
@@ -229,19 +216,16 @@ EOF
     rm -f tcp-wss.sh install-release.sh
     # 生成客户端配置信息
     cat << EOF > /usr/local/etc/xray/config.txt
-    
-    echo "${IP_COUNTRY} = ss, ${HOST_IP}, ${sport}, encrypt-method=2022-blake3-aes-128-gcm, password=${psk}, udp-relay=true"
-
-    echo "${IP_COUNTRY} = vmess, example.com, 8880, username=${v2uuid}, ws=true, ws-path=/?ed=2560, ws-headers=Host:"example.com", vmess-aead=true"
-
-    echo "vless://${v2uuid}@${HOST_IP}:${PORT}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.tesla.com&fp=chrome&pbk=${rePublicKey}&sid=123abc&type=tcp&headerType=none#${IP_COUNTRY}"
-    EOF
+echo "${IP_COUNTRY} = ss, ${HOST_IP}, ${sport}, encrypt-method=2022-blake3-aes-128-gcm, password=${psk}, udp-relay=true"
+echo "${IP_COUNTRY} = vmess, example.com, 8880, username=${v2uuid}, ws=true, ws-path=/?ed=2560, ws-headers=Host:\"example.com\", vmess-aead=true"
+echo "vless://${v2uuid}@${HOST_IP}:${PORT}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.tesla.com&fp=chrome&pbk=${rePublicKey}&sid=123abc&type=tcp&headerType=none#${IP_COUNTRY}"
+EOF
     
     echo "Xray 安装成功"
     echo ""
     echo "${IP_COUNTRY} = ss, ${HOST_IP}, ${sport}, encrypt-method=2022-blake3-aes-128-gcm, password=${psk}, udp-relay=true"
     echo ""
-    echo "${IP_COUNTRY} = vmess, example.com, 8880, username=${v2uuid}, ws=true, ws-path=/?ed=2560, ws-headers=Host:"example.com", vmess-aead=true"
+    echo "${IP_COUNTRY} = vmess, example.com, 8880, username=${v2uuid}, ws=true, ws-path=/?ed=2560, ws-headers=Host:\"example.com\", vmess-aead=true"
     echo ""
     echo "vless://${v2uuid}@${HOST_IP}:${PORT}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.tesla.com&fp=chrome&pbk=${rePublicKey}&sid=123abc&type=tcp&headerType=none#${IP_COUNTRY}"
 }
