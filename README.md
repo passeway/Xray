@@ -7,6 +7,7 @@
 bash <(curl -fsSL xray-iota.vercel.app)
 ```
 ## 详细说明
+- 自动解锁openai netflix disney
 
 - 安装Xray并配置 Reality传输协议
 
