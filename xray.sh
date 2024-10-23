@@ -234,6 +234,8 @@ EOF
     rm -f tcp-wss.sh install-release.sh
     # 生成客户端配置信息
     cat << EOF > /usr/local/etc/xray/config.txt
+ss://2022-blake3-chacha20-poly1305:${psk}@${HOST_IP}:${PORT2}#${IP_COUNTRY}
+
 ${IP_COUNTRY} = ss, ${HOST_IP}, ${PORT2}, encrypt-method=2022-blake3-aes-128-gcm, password=${psk}, udp-relay=true
 
 ${IP_COUNTRY} = vmess, example.com, 8880, username=${v2uuid}, ws=true, ws-path=/?ed=2560, ws-headers=Host:"example.com", vmess-aead=true
