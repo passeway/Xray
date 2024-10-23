@@ -82,7 +82,15 @@ reconfig() {
   },
   "dns": {
     "servers": [
-      "https://1.1.1.1/dns-query"
+      {
+        "address": "https://1.1.1.1/dns-query",
+        "domains": [
+          "geosite:openai",
+          "geosite:netflix",
+          "geosite:disney"
+        ]
+      },
+      "localhost"
     ]
   },
   "routing": {
