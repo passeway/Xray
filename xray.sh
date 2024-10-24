@@ -82,8 +82,8 @@ reconfig() {
   },
   "dns": {
     "servers": [
-      "1.1.1.1",
-      "8.8.8.8"
+      "https://1.1.1.1/dns-query",
+      "https://8.8.8.8/dns-query"
     ]
   },
   "routing": {
