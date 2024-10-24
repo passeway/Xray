@@ -9,17 +9,17 @@ PURPLE='\033[0;35m'
 CYAN='\033[0;36m'
 RESET='\033[0m'
 
-# 函数用于安装 vless-reality
+# 函数用于安装 Xray
 install_vless_reality() {
    bash <(curl -fsSL https://raw.githubusercontent.com/passeway/Xray/refs/heads/main/xray.sh)
 }
 
-# 函数用于卸载 vless-reality
+# 函数用于卸载 Xray
 uninstall_vless_reality() {
     bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ remove --purge
 }
 
-# 函数用于检查 vless-reality 安装状态
+# 函数用于检查 Xray 安装状态
 check_vless_reality_status() {
     if command -v xray &> /dev/null; then
         return 0
@@ -28,7 +28,7 @@ check_vless_reality_status() {
     fi
 }
 
-# 函数用于检查 vless-reality 运行状态
+# 函数用于检查 Xray 运行状态
 check_vless_reality_running() {
     if systemctl is-active --quiet xray; then
         return 0
@@ -55,7 +55,8 @@ show_menu() {
     echo "4. 停止 Xray 服务"
     echo "5. 重启 Xray 服务"
     echo "6. 检查 Xray 状态"
-    echo "7. 查看 Xray 配置"
+    echo "7. 查看 Xray 日志"
+    echo "8. 查看 Xray 配置"
     echo "0. 退出"
     echo -e "${GREEN}=====================${RESET}"
     read -p "请输入选项编号: " choice
@@ -75,7 +76,8 @@ while true; do
         4) sudo systemctl stop xray ;;
         5) sudo systemctl restart xray ;;
         6) sudo systemctl status xray ;;
-        7) cat /usr/local/etc/xray/config.txt ;;
+        7) sudo journalctl -u xray -f ;;
+        8) cat /usr/local/etc/xray/config.txt ;;
         0)
             echo -e "${GREEN}已退出 Xray 管理工具${RESET}"
             exit 0
