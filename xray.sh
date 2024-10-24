@@ -155,31 +155,6 @@ reconfig() {
         "password": "${psk}",
         "network": "tcp,udp"
       }
-    },
-    {
-      "port": 8880,
-      "protocol": "vmess",
-      "settings": {
-        "clients": [
-          {
-            "id": "${v2uuid}",
-            "alterId": 0
-          }
-        ]
-      },
-      "streamSettings": {
-        "network": "ws",
-        "wsSettings": {
-          "path": "/?ed=2560"
-        }
-      },
-      "sniffing": {
-        "enabled": true,
-        "destOverride": [
-          "http",
-          "tls"
-        ]
-      }
     }
   ],
   "outbounds": [
