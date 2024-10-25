@@ -4,7 +4,7 @@
 
 ## 一键脚本
 ```
-bash <(curl -fsSL xray-iota.vercel.app)
+bash <(curl -fsSL xray-bay.vercel.app)
 ```
 ## 详细说明
 - 自动解锁openai netflix disney
