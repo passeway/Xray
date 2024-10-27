@@ -6,12 +6,13 @@
 ```
 bash <(curl -fsSL xray-bay.vercel.app)
 ```
-## 详细说明
-- 自动解锁openai netflix disney
 
-- 安装Xray并配置 Reality传输协议
+## 项目简介
+- 输出客户端配置 url 方便快速设置
 
-- 输出客户端配置 URL，方便快速设置
+- 安装 Xray 配置 ss vless-reality 
+
+- 自带 wireguard 出站解锁openai netflix disney
 
 ## Xray指令
 启动 Xray 服务
