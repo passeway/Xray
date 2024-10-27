@@ -10,7 +10,7 @@ bash <(curl -fsSL xray-bay.vercel.app)
 ## 项目简介
 - 输出客户端配置 url 方便快速设置
 
-- 安装 Xray 配置 ss vless-reality 
+- 安装 Xray 配置 ss vless-reality 协议
 
 - 自带 wireguard 出站解锁openai netflix disney
 
