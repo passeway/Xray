@@ -14,7 +14,7 @@ timedatectl set-timezone Asia/Shanghai
 v2uuid=$(cat /proc/sys/kernel/random/uuid)
 
 # 生成base64
-psk=$(openssl rand -base64 24)
+psk=$(openssl rand -base64 16)
 
 # 下载并执行脚本，将输出导入当前shell环境
 eval "$(curl -fsSL https://raw.githubusercontent.com/passeway/sing-box/main/wireguard.sh)"
