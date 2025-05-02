@@ -11,7 +11,7 @@ fi
 timedatectl set-timezone Asia/Shanghai
 
 # 生成uuid
-v2uuid=$(cat /proc/sys/kernel/random/uuid)
+uuid=$(cat /proc/sys/kernel/random/uuid)
 
 # 生成base64
 psk=$(openssl rand -base64 16 | tr '+/' '-_')
@@ -88,7 +88,7 @@ reconfig() {
       "settings": {
         "clients": [
           {
-            "id": "${v2uuid}",
+            "id": "${uuid}",
             "flow": ""
           }
         ],
@@ -156,7 +156,7 @@ ss://2022-blake3-aes-128-gcm:${psk}@${HOST_IP}:${PORT1}#${IP_COUNTRY}
 
 ${IP_COUNTRY} = ss, ${HOST_IP}, ${PORT1}, encrypt-method=2022-blake3-aes-128-gcm, password=${psk}, udp-relay=true
 
-vless://${v2uuid}@${HOST_IP}:${PORT2}?encryption=none&security=reality&sni=www.tesla.com&fp=chrome&pbk=${rePublicKey}&sid=123abc&type=xhttp&path=%2Fxhttp&mode=auto#${IP_COUNTRY}
+vless://${uuid}@${HOST_IP}:${PORT2}?encryption=none&security=reality&sni=www.tesla.com&fp=chrome&pbk=${rePublicKey}&sid=123abc&type=xhttp&path=%2Fxhttp&mode=auto#${IP_COUNTRY}
 EOF
     
     echo "Xray 安装成功"
