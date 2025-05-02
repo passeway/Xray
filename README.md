@@ -8,7 +8,7 @@ bash <(curl -fsSL xray-bay.vercel.app)
 ```
 
 ## 项目简介
-- 输出客户端 url 方便快速设置使用
+- 输出客户端 url 快速设置使用
 
 - 极致性能的 shadowsocks 2022
 
