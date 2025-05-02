@@ -108,7 +108,7 @@ reconfig() {
           "privateKey": "${rePrivateKey}",
           "publicKey": "${rePublicKey}",
           "shortIds": [
-            "123bac"
+            "123abc"
           ],
           "fingerprint": "chrome"
         },
