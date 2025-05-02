@@ -70,7 +70,7 @@ reconfig() {
     cat >/usr/local/etc/xray/config.json <<EOF
 {
   "log": {
-    "loglevel": "info"
+    "loglevel": "warning"
   },
   "inbounds": [
     {
@@ -132,7 +132,7 @@ reconfig() {
   "outbounds": [
     {
       "protocol": "freedom",
-      "settings": {}
+      "tag": "direct"
     }
   ]
 }
