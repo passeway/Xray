@@ -4,12 +4,12 @@
   },
   "inbounds": [
     {
-      "port": 20041,
+      "port": 443,
       "protocol": "vless",
       "settings": {
         "clients": [
           {
-            "id": "261a3c49-607b-4f72-e6b3-9adbb0813c8e",
+            "id": "uuid",
             "flow": ""
           }
         ],
@@ -26,10 +26,10 @@
           "serverNames": [
             "www.yahoo.com"
           ],
-          "privateKey": "qNk9M-FzZPpA6ktCv_YSJCq5flz72UDdy_7llL3gCns",
-          "publicKey": "uPbubqm875HmAmxGSx-595NqyUyWkhO4Yho7dX_izF0",
+          "privateKey": "prk",
+          "publicKey": "puk",
           "shortIds": [
-            "a33f577d"
+            "123abc"
           ],
           "fingerprint": "chrome"
         },
@@ -64,12 +64,12 @@
   },
   "inbounds": [ // 入站连接配置，定义如何接收客户端连接
     {
-      "port": 20041, // 服务器监听的端口号
+      "port": 443, // 服务器监听的端口号
       "protocol": "vless", // 使用VLESS协议，这是一种轻量级的加密传输协议
       "settings": { // VLESS协议的具体设置
         "clients": [ // 允许连接的客户端列表
           {
-            "id": "261a3c49-607b-4f72-e6b3-9adbb0813c8e", // 客户端的UUID，作为身份验证凭证
+            "id": "uuid", // 客户端的UUID，作为身份验证凭证
             "flow": "" // 流控模式，空字符串表示不启用流控
           }
         ],
@@ -86,8 +86,8 @@
           "serverNames": [ // 用于SNI（服务器名称指示）的域名列表
             "www.yahoo.com" // 此处使用yahoo.com作为伪装站点
           ],
-          "privateKey": "qNk9M-FzZPpA6ktCv_YSJCq5flz72UDdy_7llL3gCns", // REALITY的私钥
-          "publicKey": "uPbubqm875HmAmxGSx-595NqyUyWkhO4Yho7dX_izF0", // REALITY的公钥
+          "privateKey": "prk", // REALITY的私钥
+          "publicKey": "puk", // REALITY的公钥
           "shortIds": [ // 短ID列表，用于REALITY协议的握手过程
             "a33f577d" // 一个短ID示例
           ],
