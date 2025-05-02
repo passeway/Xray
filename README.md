@@ -12,7 +12,7 @@ bash <(curl -fsSL xray-bay.vercel.app)
 
 - 极致性能的 shadowsocks 2022
 
-- 极致安全的 vless+reality+xhttk
+- 极致安全的 vless+reality+xhttp
 
 
 
