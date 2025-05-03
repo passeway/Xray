@@ -124,7 +124,11 @@ reconfig() {
       },
       "sniffing": {
         "enabled": true,
-        "destOverride": ["http", "tls", "quic"]
+        "destOverride": [
+            "http", 
+            "tls", 
+            "quic"
+        ]
       }
     }
   ],
