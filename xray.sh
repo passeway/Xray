@@ -158,7 +158,7 @@ EOF
     cat << EOF > /usr/local/etc/xray/config.txt
 ss://2022-blake3-aes-128-gcm:${psk_urlsafe}@${HOST_IP}:${PORT1}#${IP_COUNTRY}
 
-${IP_COUNTRY} = ss, ${HOST_IP}, ${PORT1}, encrypt-method=2022-blake3-aes-128-gcm, password=${psk_urlsafe}, udp-relay=true
+${IP_COUNTRY} = ss, ${HOST_IP}, ${PORT1}, encrypt-method=2022-blake3-aes-128-gcm, password=${psk}, udp-relay=true
 
 vless://${uuid}@${HOST_IP}:${PORT2}?encryption=none&security=reality&sni=www.tesla.com&fp=chrome&pbk=${PublicKey}&sid=123abc&type=xhttp&path=%2F${path}&mode=auto#${IP_COUNTRY}
 EOF
