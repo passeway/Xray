@@ -1,0 +1,76 @@
+{
+  // 日志配置
+  "log": {
+    "loglevel": "warning"  // 日志级别：仅记录警告和错误信息
+  },
+  // 入站连接配置（服务器如何接收连接）
+  "inbounds": [
+    {
+      // Shadowsocks 协议配置
+      "port": 8388,  // 第一个监听端口
+      "protocol": "shadowsocks",  // 使用 Shadowsocks 协议
+      "settings": {
+        "method": "2022-blake3-aes-128-gcm",  // 加密方法，使用 2022 年推出的高安全性加密算法
+        "password": "${psk}",  // 预共享密钥 (可通过openssl rand -base64 16生成)
+        "network": "tcp,udp"  // 同时支持 TCP 和 UDP 流量
+      }
+    },
+    {
+      // VLESS 协议配置（V2Ray 的轻量级加密协议）
+      "port": 443,
+      "protocol": "vless",  // 使用 VLESS 协议
+      "settings": {
+        "clients": [
+          {
+            "id": "${uuid}",  //  (可通过 xray uuid 生成)
+            "flow": ""  // 流控模式，此处为空表示不启用，XHTTP传输模式下不需要也不支持"xtls-rprx-vision"流控
+          }
+        ],
+        "decryption": "none",  // VLESS 本身不加密，交由传输层处理
+        "fallbacks": []  // 回落配置，为空表示不启用回退功能
+      },
+      // 传输层设置
+      "streamSettings": {
+        "network": "xhttp",  // 使用 xhttp 传输协议，一种 HTTP 的扩展
+        "security": "reality",  // 使用 REALITY 安全协议
+        "realitySettings": {
+          "show": false,  // 服务器日志中不会显示REALITY协议的详细连接信息，不会记录每个REALITY连接的握手过程和验证细节
+          "dest": "www.tesla.com:443",  // 目标网站最低标准：国外网站，支持 TLSv1.3、X25519 与 H2，域名非跳转用（主域名可能被用于跳转到 www）
+          "xver": 0,  // X-Forwarded-For 版本，0 表示不使用，服务器不会添加或修改任何X-Forwarded-For头信息，客户端的原始IP地址不会被转发到目标服务器
+          "serverNames": [
+            "www.tesla.com"  // // 客户端可用的 serverName 列表，暂不支持 * 通配符，在 Chrome 里输入 "dest" 的网址 -> F12 -> 安全 -> F5 -> 主要来源（安全），填证书中 SAN 的值
+          ],
+          "privateKey": "${rePrivateKey}",  // REALITY 私钥 (可通过 xray x25519 密钥生成)
+          "publicKey": "${rePublicKey}",  // REALITY 公钥 (对应于私钥的公钥)
+          "shortIds": [
+            "123abc"  // // 客户端可用的 shortId 列表，可用于区分不同的客户端，0 到 f，长度为 2 的倍数，长度上限为 16，可留空，或执行 openssl rand -hex 3 生成
+          ],
+          "fingerprint": "chrome"  // 伪装指纹为 Chrome 浏览器
+        },
+        // xhttp 协议特定设置
+        "xhttpSettings": {
+          "path": "/xhttp",  // 服务器路径，客户端需要匹配此路径
+          "host": "",  // 主机头，此处为空系统会使用默认值或由客户端实际请求决定
+          "headers": {},  // 额外的HTTP头信息，为空表示不添加
+          "scMaxBufferedPosts": 30,  // 服务器端最大缓冲 POST 请求数
+          "scMaxEachPostBytes": "1000000",  // 每个 POST 请求最大字节数（1MB）
+          "noSSEHeader": false,  // 不禁用 SSE 头
+          "xPaddingBytes": "100-1000",  // 添加100-1000字节的随机填充，增加流量混淆效果
+          "mode": "auto"  // 自动选择最佳模式
+        }
+      },
+      // 流量探测设置
+      "sniffing": {
+        "enabled": true,  // 启用流量探测
+        "destOverride": ["http", "tls", "quic"]  // 可覆盖的目标协议类型
+      }
+    }
+  ],
+  // 出站连接配置（如何发送流量）
+  "outbounds": [
+    {
+      "protocol": "freedom",  // 直接连接，不经过代理
+      "tag": "direct"  // 标签名称，用于路由规则引用
+    }
+  ]
+}
