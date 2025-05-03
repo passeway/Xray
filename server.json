@@ -70,3 +70,45 @@
     }
   ]
 }
+
+
+
+"xhttpSettings": {
+    "host": "example.com",  // 主机名，设置HTTP请求头中的Host字段
+    "path": "/yourpath",    // 请求路径，客户端和服务器必须保持一致
+    "mode": "auto",         // 传输模式，auto表示自动选择最佳模式
+    "extra": {              // 额外高级设置
+        "headers": {        // 自定义HTTP请求头
+            // "key": "value"  // 可以添加自定义的HTTP头，如User-Agent等
+        },
+        "xPaddingBytes": "100-1000",  // 添加100-1000字节的随机填充数据，增强隐蔽性
+        "noGRPCHeader": false,        // 是否禁用gRPC头，仅适用于客户端的stream-up/one模式
+        "noSSEHeader": false,         // 是否禁用SSE(服务器发送事件)头，仅适用于服务器
+        "scMaxEachPostBytes": 1000000, // 每个POST请求的最大字节数，仅适用于packet-up模式
+        "scMinPostsIntervalMs": 30,    // 客户端POST请求的最小间隔时间(毫秒)，仅适用于packet-up模式
+        "scMaxBufferedPosts": 30,      // 服务器最大缓存的POST请求数量，仅适用于packet-up模式
+        "scStreamUpServerSecs": "20-80", // stream-up模式下服务器连接保持时间(秒)，仅适用于服务器
+        "xmux": {                      // 多路复用设置，主要用于h2/h3协议，仅适用于客户端
+            "maxConcurrency": "16-32",  // 单个连接的最大并发请求数，范围16-32
+            "maxConnections": 0,        // 最大连接数，0表示不限制
+            "cMaxReuseTimes": 0,        // 连接最大重用次数，0表示不限制
+            "hMaxRequestTimes": "600-900", // 单个连接最大请求次数，范围600-900
+            "hMaxReusableSecs": "1800-3000", // 连接最大重用时间(秒)，范围1800-3000
+            "hKeepAlivePeriod": 0       // 保持活动检测周期，0表示使用系统默认值
+        },
+        "downloadSettings": {          // 下载设置，仅适用于客户端
+            "address": "",             // 下载使用的域名/IP，可与上传不同
+            "port": 443,               // 下载使用的端口
+            "network": "xhttp",        // 下载使用的网络协议
+            "security": "tls",         // 下载使用的安全协议
+            "tlsSettings": {           // TLS设置
+                // ...                 // 此处省略TLS详细设置
+            },
+            "xhttpSettings": {         // 下载时的xhttp设置
+                "path": "/yourpath",   // 路径必须与上传设置相同
+                // ...                 // 此处省略其他xhttp设置
+            },
+            "sockopt": {}              // 套接字选项，如果上传设置的"penetrate"为true，将被上传设置的sockopt替换
+        }
+    }
+}
