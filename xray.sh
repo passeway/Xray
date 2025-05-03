@@ -13,7 +13,7 @@ timedatectl set-timezone Asia/Shanghai
 # 生成path && uuid && pak
 path=$(openssl rand -hex 6)
 uuid=$(cat /proc/sys/kernel/random/uuid)
-psk=$(openssl rand -base64 16 | tr '+/' '-_')
+psk=$(openssl rand 16 | base64 | tr -d '\n' | tr '+/' '-_')
 
 
 # 获取随机端口
