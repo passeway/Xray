@@ -1,12 +1,9 @@
 {
-  // 日志配置
-  "log": {
+  "log": {  // 日志配置
     "loglevel": "warning"  // 日志级别：仅记录警告和错误信息
   },
-  // 入站连接配置（服务器如何接收连接）
-  "inbounds": [
+  "inbounds": [  // 入站连接配置（服务器如何接收连接）
     {
-      // Shadowsocks 协议配置
       "port": 8388,  // 第一个监听端口
       "protocol": "shadowsocks",  // 使用 Shadowsocks 协议
       "settings": {
@@ -16,8 +13,7 @@
       }
     },
     {
-      // VLESS 协议配置（V2Ray 的轻量级加密协议）
-      "port": 443,
+      "port": 443,        // VLESS 协议配置（V2Ray 的轻量级加密协议）
       "protocol": "vless",  // 使用 VLESS 协议
       "settings": {
         "clients": [
@@ -29,8 +25,7 @@
         "decryption": "none",  // VLESS 本身不加密，交由传输层处理
         "fallbacks": []  // 回落配置，为空表示不启用回退功能
       },
-      // 传输层设置
-      "streamSettings": {
+      "streamSettings": {    // 传输层设置
         "network": "xhttp",  // 使用 xhttp 传输协议，一种 HTTP 的扩展
         "security": "reality",  // 使用 REALITY 安全协议
         "realitySettings": {
@@ -47,8 +42,7 @@
           ],
           "fingerprint": "chrome"  // 伪装指纹为 Chrome 浏览器
         },
-        // xhttp 协议特定设置
-        "xhttpSettings": {
+        "xhttpSettings": {   // xhttp 协议特定设置
           "path": "/xhttp",  // 服务器路径，客户端需要匹配此路径
           "host": "",  // 主机头，此处为空系统会使用默认值或由客户端实际请求决定
           "headers": {},  // 额外的HTTP头信息，为空表示不添加
@@ -59,15 +53,17 @@
           "mode": "auto"  // 自动选择最佳模式
         }
       },
-      // 流量探测设置
-      "sniffing": {
+      "sniffing": {       // 流量探测设置
         "enabled": true,  // 启用流量探测
-        "destOverride": ["http", "tls", "quic"]  // 可覆盖的目标协议类型
+        "destOverride": [  // 可覆盖的目标协议类型
+            "http", 
+            "tls", 
+            "quic"
+        ]  
       }
     }
   ],
-  // 出站连接配置（如何发送流量）
-  "outbounds": [
+  "outbounds": [    // 出站连接配置（如何发送流量）
     {
       "protocol": "freedom",  // 直接连接，不经过代理
       "tag": "direct"  // 标签名称，用于路由规则引用
