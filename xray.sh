@@ -13,7 +13,8 @@ timedatectl set-timezone Asia/Shanghai
 # 生成path && uuid && pak
 path=$(openssl rand -hex 6)
 uuid=$(cat /proc/sys/kernel/random/uuid)
-psk=$(openssl rand 16 | base64 | tr -d '\n' | tr '+/' '-_')
+psk=$(openssl rand -base64 16)
+psk_urlsafe=$(echo -n "$psk" | tr '+/' '-_')
 
 
 # 获取随机端口
@@ -155,9 +156,9 @@ EOF
     
     # 生成客户端配置信息
     cat << EOF > /usr/local/etc/xray/config.txt
-ss://2022-blake3-aes-128-gcm:${psk}@${HOST_IP}:${PORT1}#${IP_COUNTRY}
+ss://2022-blake3-aes-128-gcm:${psk_urlsafe}@${HOST_IP}:${PORT1}#${IP_COUNTRY}
 
-${IP_COUNTRY} = ss, ${HOST_IP}, ${PORT1}, encrypt-method=2022-blake3-aes-128-gcm, password=${psk}, udp-relay=true
+${IP_COUNTRY} = ss, ${HOST_IP}, ${PORT1}, encrypt-method=2022-blake3-aes-128-gcm, password=${psk_urlsafe}, udp-relay=true
 
 vless://${uuid}@${HOST_IP}:${PORT2}?encryption=none&security=reality&sni=www.tesla.com&fp=chrome&pbk=${PublicKey}&sid=123abc&type=xhttp&path=%2F${path}&mode=auto#${IP_COUNTRY}
 EOF
