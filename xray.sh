@@ -161,8 +161,6 @@ EOF
     # 获取IP所在国家
     IP_COUNTRY=$(curl -s http://ipinfo.io/${HOST_IP}/country)
     
-    # 删除服务脚本
-    rm -f tcp-wss.sh install-release.sh
     
     # 生成客户端配置信息
     cat << EOF > /usr/local/etc/xray/config.txt
