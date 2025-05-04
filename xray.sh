@@ -17,26 +17,34 @@ psk=$(openssl rand -base64 16)
 psk_urlsafe=$(echo -n "$psk" | tr '+/' '-_')
 
 
-# 获取随机端口
-getPorts() {
-    local port1 port2
-    port1=$(shuf -i 1024-49151 -n 1 2>/dev/null)
-    while nc -z localhost "${port1}"; do
-        port1=$(shuf -i 1024-49151 -n 1 2>/dev/null)
-    done
-
-    port2=$(shuf -i 1024-49151 -n 1 2>/dev/null)
-    while nc -z localhost "${port2}" || [ "${port2}" -eq "${port1}" ]; do
-        port2=$(shuf -i 1024-49151 -n 1 2>/dev/null)
-    done
-
-    echo "${port1} ${port2}"
+# 检查端口是否被占用
+isPortUsed() {
+    local port=$1
+    ss -ltn | grep -q ":$port"
 }
 
-# 获取两个随机端口
-PORTS=($(getPorts))
+# 获取随机两个端口
+Ports() {
+    local port1 port2
+    port1=$(shuf -i 1024-49151 -n 1)
+    while isPortUsed "$port1"; do
+        port1=$(shuf -i 1024-49151 -n 1)
+    done
+
+    port2=$(shuf -i 1024-49151 -n 1)
+    while isPortUsed "$port2" || [ "$port2" -eq "$port1" ]; do
+        port2=$(shuf -i 1024-49151 -n 1)
+    done
+
+    echo "$port1 $port2"
+}
+
+
+# 获取随机两个端口
+PORTS=($(Ports))
 PORT1=${PORTS[0]}
 PORT2=${PORTS[1]}
+
 
 
 # 获取IP地址
@@ -48,6 +56,8 @@ getIP() {
     fi
     echo "${serverIP}"
 }
+
+
 # 安装 xray
 install_xray() {
     if [ -f "/usr/bin/apt-get" ]; then
@@ -66,7 +76,7 @@ reconfig() {
     PrivateKey=$(echo "${X25519Key}" | head -1 | awk '{print $3}')
     PublicKey=$(echo "${X25519Key}" | tail -n 1 | awk '{print $3}')
 
-    # 重新配置Xray
+    # 重新配置config.json
     cat >/usr/local/etc/xray/config.json <<EOF
 {
   "log": {
