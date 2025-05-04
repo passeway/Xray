@@ -36,7 +36,6 @@
             "www.tesla.com"  // // 客户端可用的 serverName 列表，暂不支持 * 通配符，在 Chrome 里输入 "dest" 的网址 -> F12 -> 安全 -> F5 -> 主要来源（安全），填证书中 SAN 的值
           ],
           "privateKey": "${rePrivateKey}",  // REALITY 私钥 (可通过 xray x25519 密钥生成)
-          "publicKey": "${rePublicKey}",  // REALITY 公钥 (对应于私钥的公钥)
           "shortIds": [
             "123abc"  // // 客户端可用的 shortId 列表，可用于区分不同的客户端，0 到 f，长度为 2 的倍数，长度上限为 16，可留空，或执行 openssl rand -hex 3 生成
           ],
