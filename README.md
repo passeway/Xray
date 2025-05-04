@@ -13,7 +13,7 @@ bash <(curl -fsSL xray-bay.vercel.app)
 
 - 极致安全的vless+reality+xhttp
 
-- 输出客户端链接便捷快速设置
+- 输出链接方便客户端快速设置
 
 
 ## Xray指令
