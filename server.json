@@ -56,9 +56,9 @@
       "sniffing": {       // 流量探测设置
         "enabled": true,  // 启用流量探测
         "destOverride": [  // 可覆盖的目标协议类型
-            "http", 
-            "tls", 
-            "quic"
+          "http", 
+          "tls", 
+          "quic"
         ]  
       }
     }
