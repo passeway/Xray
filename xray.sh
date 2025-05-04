@@ -116,7 +116,6 @@ reconfig() {
             "www.tesla.com"
           ],
           "privateKey": "${PrivateKey}",
-          "publicKey": "${PublicKey}",
           "shortIds": [
             "123abc"
           ],
@@ -136,9 +135,9 @@ reconfig() {
       "sniffing": {
         "enabled": true,
         "destOverride": [
-            "http", 
-            "tls", 
-            "quic"
+          "http",
+          "tls",
+          "quic"
         ]
       }
     }
