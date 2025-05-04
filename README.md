@@ -9,9 +9,9 @@ bash <(curl -fsSL xray-bay.vercel.app)
 
 ## 项目简介
 
-- 极致性能的shadowsocks 2022
+- 极致性能shadowsocks 2022
 
-- 极致安全的vless+reality+xhttp
+- 极致安全vless+reality+xhttp
 
 - 输出链接方便客户端快速设置
 
