@@ -151,7 +151,6 @@ EOF
 
 # 主函数
 main() {
-    clear
     root
     port
     xray
