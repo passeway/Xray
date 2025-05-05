@@ -39,17 +39,17 @@
           "shortIds": [
             "123abc"  // // 客户端可用的 shortId 列表，可用于区分不同的客户端，0 到 f，长度为 2 的倍数，长度上限为 16，可留空，或执行 openssl rand -hex 3 生成
           ],
-          "fingerprint": "chrome"  // 伪装指纹为 Chrome 浏览器
+          "fingerprint": "chrome"  // 伪装成Chrome浏览器的TLS指纹，增加伪装效果
         },
         "xhttpSettings": {   // xhttp 协议特定设置
           "path": "/xhttp",  // 服务器路径，客户端需要匹配此路径
-          "host": "",  // 主机头，此处为空系统会使用默认值或由客户端实际请求决定
-          "headers": {},  // 额外的HTTP头信息，为空表示不添加
-          "scMaxBufferedPosts": 30,  // 服务器端最大缓冲 POST 请求数
-          "scMaxEachPostBytes": "1000000",  // 每个 POST 请求最大字节数（1MB）
-          "noSSEHeader": false,  // 不禁用 SSE 头
+          "host": "",  // 主机头，为空则使用默认值或由客户端实际请求决定
+          "headers": {},  // 额外的HTTP头信息，为空表示不添加自定义头
+          "scMaxBufferedPosts": 30,  // 服务器端最大缓冲POST请求数，限制并发处理能力
+          "scMaxEachPostBytes": "1000000",  // 每个POST请求最大字节数（1MB），限制单个请求大小
+          "noSSEHeader": false,  // 不禁用SSE（Server-Sent Events）头，保持默认行为
           "xPaddingBytes": "100-1000",  // 添加100-1000字节的随机填充，增加流量混淆效果
-          "mode": "auto"  // 自动选择最佳模式
+          "mode": "auto"  // 自动选择最佳传输模式，基于网络环境和设备性能
         }
       },
       "sniffing": {       // 流量探测设置
@@ -64,8 +64,8 @@
   ],
   "outbounds": [    // 出站连接配置（如何发送流量）
     {
-      "protocol": "freedom",  // 直接连接，不经过代理
-      "tag": "direct"  // 标签名称，用于路由规则引用
+      "protocol": "freedom",  // 使用freedom协议，表示直接连接目标，不经过其他代理
+      "tag": "direct"  // 标签名称，用于路由规则引用，便于管理不同的出站策略
     }
   ]
 }
