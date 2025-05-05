@@ -24,13 +24,13 @@ root() {
 port() {    
     # 获取随机端口
     local port1 port2    
-    port1=$(shuf -i 1024-49151 -n 1)
+    port1=$(shuf -i 1024-65000 -n 1)
     while ss -ltn | grep -q ":$port1"; do
-        port1=$(shuf -i 1024-49151 -n 1)
+        port1=$(shuf -i 1024-65000 -n 1)
     done    
-    port2=$(shuf -i 1024-49151 -n 1)
+    port2=$(shuf -i 1024-65000 -n 1)
     while ss -ltn | grep -q ":$port2" || [ "$port2" -eq "$port1" ]; do
-        port2=$(shuf -i 1024-49151 -n 1)
+        port2=$(shuf -i 1024-65000 -n 1)
     done
     
     PORT1=$port1
