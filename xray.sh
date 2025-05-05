@@ -20,9 +20,8 @@ root() {
     fi
 }
 
-# 准备安装环境
+# 获取随机端口
 port() {    
-    # 获取随机端口
     local port1 port2    
     port1=$(shuf -i 1024-65000 -n 1)
     while ss -ltn | grep -q ":$port1"; do
