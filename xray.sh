@@ -39,7 +39,7 @@ port() {
 
 # 配置和启动Xray
 xray() {
-    # 安装Xray
+    # 安装Xray内核
     bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
     # 生成所需随机参数
     path=$(openssl rand -hex 6)
