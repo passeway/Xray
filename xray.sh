@@ -10,7 +10,7 @@ root() {
     fi
     
     # 更新系统和安装基础依赖
-    echo "正在更新系统和安装依赖..."
+    echo "正在更新系统和安装依赖"
     if [ -f "/usr/bin/apt-get" ]; then
         apt-get update -y && apt-get upgrade -y
         apt-get install -y gawk curl
