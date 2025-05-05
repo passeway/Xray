@@ -43,7 +43,7 @@ xray() {
     # 生成所需随机参数
     path=$(openssl rand -hex 6)
     uuid=$(cat /proc/sys/kernel/random/uuid)
-    psk=$(openssl rand -base64 16)
+    psk=$(openssl rand -base64 16 | tr -d '\n')
     psk_urlsafe=$(echo -n "$psk" | tr '+/' '-_')
     X25519Key=$(/usr/local/bin/xray x25519)
     PrivateKey=$(echo "${X25519Key}" | head -1 | awk '{print $3}')
