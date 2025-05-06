@@ -27,7 +27,7 @@ sudo systemctl status xray
 
 ## 协议优势
 
-### 1️⃣ Shadowsocks 2022-blake3-aes-128-gcm
+### 1️⃣ Shadowsocks 2022
 
 | 特性 | 优势 |
 |------|------|
