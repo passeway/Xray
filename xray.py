@@ -159,7 +159,7 @@ def main():
     uuid_str = str(uuid.uuid4())
 
     psk_b64 = subprocess.check_output(["openssl", "rand", "-base64", "16"]).decode().strip()
-    psk_bytes = base64.b64decode(psk_b64 + '==')
+    psk_bytes = base64.b64decode(psk_b64)
     psk_urlsafe = base64.urlsafe_b64encode(psk_bytes).decode().rstrip('=')
 
     private_key, public_key = generate_keys()
