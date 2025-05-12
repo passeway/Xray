@@ -127,10 +127,10 @@ def write_config(port1, port2, psk_b64, uuid_str, private_key, public_key, path)
     with open("/usr/local/etc/xray/config.json", "w") as f:
         json.dump(config, f, indent=2)
 
-def save_client_config(host_ip, port1, port2, psk_urlsafe, uuid_str, public_key, path, country):
+def save_client_config(host_ip, port1, port2, psk_b64, uuid_str, public_key, path, country):
     with open("/usr/local/etc/xray/config.txt", "w") as f:
-        f.write(f"ss://2022-blake3-aes-128-gcm:{psk_urlsafe}@{host_ip}:{port1}#{country}\n\n")
-        f.write(f"{country} = ss, {host_ip}, {port1}, encrypt-method=2022-blake3-aes-128-gcm, password={psk_urlsafe}, udp-relay=true\n\n")
+        f.write(f"ss://2022-blake3-aes-128-gcm:{psk_b64}@{host_ip}:{port1}#{country}\n\n")
+        f.write(f"{country} = ss, {host_ip}, {port1}, encrypt-method=2022-blake3-aes-128-gcm, password={psk_b64}, udp-relay=true\n\n")
         vless = (
             f"vless://{uuid_str}@{host_ip}:{port2}?encryption=none&security=reality&sni=www.tesla.com&"
             f"fp=chrome&pbk={public_key}&sid=123abc&type=xhttp&path=%2F{path}&mode=auto#{country}\n"
@@ -159,8 +159,6 @@ def main():
     uuid_str = str(uuid.uuid4())
 
     psk_b64 = subprocess.check_output(["openssl", "rand", "-base64", "16"]).decode().strip()
-    psk_bytes = base64.b64decode(psk_b64)
-    psk_urlsafe = base64.urlsafe_b64encode(psk_bytes).decode().rstrip('=')
 
     private_key, public_key = generate_keys()
     write_config(port1, port2, psk_b64, uuid_str, private_key, public_key, path)
@@ -170,7 +168,7 @@ def main():
 
     host_ip = get_host_ip()
     country = get_country(host_ip)
-    save_client_config(host_ip, port1, port2, psk_urlsafe, uuid_str, public_key, path, country)
+    save_client_config(host_ip, port1, port2, psk_b64, uuid_str, public_key, path, country)
 
     print("Xray 安装完成\n")
     with open("/usr/local/etc/xray/config.txt") as f:
