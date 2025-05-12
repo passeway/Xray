@@ -14,7 +14,7 @@ def check_root():
         exit(1)
 
 def update_system():
-    print("正在更新系统和安装依赖...")
+    print("正在更新系统和安装依赖")
     if os.path.exists("/usr/bin/apt-get"):
         subprocess.run(["apt-get", "update", "-y"])
         subprocess.run(["apt-get", "upgrade", "-y"])
@@ -37,7 +37,8 @@ def get_random_ports():
     return generate(), generate()
 
 def install_xray():
-    subprocess.run(["bash", "-c", "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh) @ install"])
+    subprocess.run(["curl", "-Lo", "install-release.sh", "https://github.com/XTLS/Xray-install/raw/main/install-release.sh"])
+    subprocess.run(["bash", "install-release.sh"])
 
 def generate_keys():
     x25519 = subprocess.check_output(["/usr/local/bin/xray", "x25519"]).decode().splitlines()
@@ -69,7 +70,7 @@ def get_country(ip):
     except:
         return ""
 
-def write_config(port1, port2, psk, uuid_str, private_key, public_key, path):
+def write_config(port1, port2, psk_b64, uuid_str, private_key, public_key, path):
     config = {
         "log": {"loglevel": "warning"},
         "inbounds": [
@@ -78,7 +79,7 @@ def write_config(port1, port2, psk, uuid_str, private_key, public_key, path):
                 "protocol": "shadowsocks",
                 "settings": {
                     "method": "2022-blake3-aes-128-gcm",
-                    "password": psk,
+                    "password": psk_b64,
                     "network": "tcp,udp"
                 }
             },
@@ -126,11 +127,10 @@ def write_config(port1, port2, psk, uuid_str, private_key, public_key, path):
     with open("/usr/local/etc/xray/config.json", "w") as f:
         json.dump(config, f, indent=2)
 
-def save_client_config(host_ip, port1, port2, psk, uuid_str, public_key, path, country):
-    psk_urlsafe = base64.urlsafe_b64encode(psk.encode()).decode().rstrip('=')
+def save_client_config(host_ip, port1, port2, psk_urlsafe, uuid_str, public_key, path, country):
     with open("/usr/local/etc/xray/config.txt", "w") as f:
         f.write(f"ss://2022-blake3-aes-128-gcm:{psk_urlsafe}@{host_ip}:{port1}#{country}\n\n")
-        f.write(f"{country} = ss, {host_ip}, {port1}, encrypt-method=2022-blake3-aes-128-gcm, password={psk}, udp-relay=true\n\n")
+        f.write(f"{country} = ss, {host_ip}, {port1}, encrypt-method=2022-blake3-aes-128-gcm, password={psk_urlsafe}, udp-relay=true\n\n")
         vless = (
             f"vless://{uuid_str}@{host_ip}:{port2}?encryption=none&security=reality&sni=www.tesla.com&"
             f"fp=chrome&pbk={public_key}&sid=123abc&type=xhttp&path=%2F{path}&mode=auto#{country}\n"
@@ -146,17 +146,20 @@ def main():
 
     path = os.urandom(6).hex()
     uuid_str = str(uuid.uuid4())
-    psk = base64.b64encode(os.urandom(16)).decode().rstrip('=')
+
+    psk_bytes = os.urandom(16)
+    psk_b64 = base64.b64encode(psk_bytes).decode()
+    psk_urlsafe = base64.urlsafe_b64encode(psk_bytes).decode().rstrip('=')
 
     private_key, public_key = generate_keys()
-    write_config(port1, port2, psk, uuid_str, private_key, public_key, path)
+    write_config(port1, port2, psk_b64, uuid_str, private_key, public_key, path)
 
     subprocess.run(["systemctl", "enable", "xray"])
     subprocess.run(["systemctl", "restart", "xray"])
 
     host_ip = get_host_ip()
     country = get_country(host_ip)
-    save_client_config(host_ip, port1, port2, psk, uuid_str, public_key, path, country)
+    save_client_config(host_ip, port1, port2, psk_urlsafe, uuid_str, public_key, path, country)
 
     print("Xray 安装完成\n")
     with open("/usr/local/etc/xray/config.txt") as f:
