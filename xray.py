@@ -14,7 +14,7 @@ def check_root():
         exit(1)
 
 def update_system():
-    print("正在更新系统和安装依赖")
+    print("正在更新系统和安装依赖...")
     if os.path.exists("/usr/bin/apt-get"):
         subprocess.run(["apt-get", "update", "-y"])
         subprocess.run(["apt-get", "upgrade", "-y"])
@@ -147,8 +147,9 @@ def main():
     path = os.urandom(6).hex()
     uuid_str = str(uuid.uuid4())
 
-    psk_bytes = os.urandom(16)
-    psk_b64 = base64.b64encode(psk_bytes).decode()
+   
+    psk_b64 = subprocess.check_output(["openssl", "rand", "-base64", "16"]).decode().strip()
+    psk_bytes = base64.b64decode(psk_b64 + '==')  
     psk_urlsafe = base64.urlsafe_b64encode(psk_bytes).decode().rstrip('=')
 
     private_key, public_key = generate_keys()
