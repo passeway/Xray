@@ -107,7 +107,7 @@ xray() {
           ],
           "privateKey": "${PrivateKey}",
           "shortIds": [
-            "123abc"
+            "${shid}"
           ],
           "fingerprint": "chrome"
         },
