@@ -156,10 +156,10 @@ EOF
     # 生成并保存客户端配置
     cat << EOF > /usr/local/etc/xray/config.txt
 
-VLESS+TCP+REALITY
+vless+tcp+reality
 vless://${uuid}@${HOST_IP}:${PORT1}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.tesla.com&fp=chrome&pbk=${PublicKey}&sid=123abc&type=tcp&headerType=none#${IP_COUNTRY}
 
-VLESS+XHTTP+REALITY
+vless+xhttp+reality
 vless://${uuid}@${HOST_IP}:${PORT2}?encryption=none&security=reality&sni=www.tesla.com&fp=chrome&pbk=${PublicKey}&sid=123abc&type=xhttp&path=%2F${path}&mode=auto#${IP_COUNTRY}
 EOF
 
