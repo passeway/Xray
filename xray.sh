@@ -41,7 +41,8 @@ xray() {
     # 安装Xray内核
     bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
     # 生成所需参数
-    path=$(openssl rand -hex 6)
+    path=$(openssl rand -hex 8)
+    shid=$(openssl rand -hex 8)
     uuid=$(/usr/local/bin/xray uuid)
     X25519Key=$(/usr/local/bin/xray x25519)
     PrivateKey=$(echo "${X25519Key}" | head -1 | awk '{print $3}')
@@ -76,8 +77,7 @@ xray() {
           ],
           "privateKey": "${PrivateKey}",
           "shortIds": [
-            "",
-            "123abc"
+            "${shid}"
           ]
         }
       }
@@ -157,10 +157,10 @@ EOF
     cat << EOF > /usr/local/etc/xray/config.txt
 
 vless+tcp+reality
-vless://${uuid}@${HOST_IP}:${PORT1}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.tesla.com&fp=chrome&pbk=${PublicKey}&sid=123abc&type=tcp&headerType=none#${IP_COUNTRY}
+vless://${uuid}@${HOST_IP}:${PORT1}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.tesla.com&fp=chrome&pbk=${PublicKey}&sid=${shid}&type=tcp&headerType=none#${IP_COUNTRY}
 
 vless+xhttp+reality
-vless://${uuid}@${HOST_IP}:${PORT2}?encryption=none&security=reality&sni=www.tesla.com&fp=chrome&pbk=${PublicKey}&sid=123abc&type=xhttp&path=%2F${path}&mode=auto#${IP_COUNTRY}
+vless://${uuid}@${HOST_IP}:${PORT2}?encryption=none&security=reality&sni=www.tesla.com&fp=chrome&pbk=${PublicKey}&sid=${shid}&type=xhttp&path=%2F${path}&mode=auto#${IP_COUNTRY}
 EOF
 
     echo "Xray 安装完成"
