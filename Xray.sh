@@ -14,6 +14,12 @@ install_vless_reality() {
    bash <(curl -fsSL https://raw.githubusercontent.com/passeway/Xray/refs/heads/main/xray.sh)
 }
 
+# 函数用于更新 Xray
+upgrade_vless_reality() {
+    bash <(curl -Ls https://github.com/XTLS/Xray-install/raw/main/install-release.sh) install
+    systemctl restart xray
+}
+
 # 函数用于卸载 Xray
 uninstall_vless_reality() {
     bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ remove --purge
@@ -57,6 +63,7 @@ show_menu() {
     echo "6. 检查 Xray 状态"
     echo "7. 查看 Xray 日志"
     echo "8. 查看 Xray 配置"
+    echo "9. 更新 Xray 内核"
     echo "0. 退出"
     echo -e "${GREEN}=====================${RESET}"
     read -p "请输入选项编号: " choice
@@ -78,6 +85,7 @@ while true; do
         6) sudo systemctl status xray ;;
         7) sudo journalctl -u xray -f ;;
         8) cat /usr/local/etc/xray/config.txt ;;
+        9) upgrade_vless_reality ;;
         0)
             echo -e "${GREEN}已退出 Xray 管理工具${RESET}"
             exit 0
