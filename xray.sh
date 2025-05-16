@@ -40,11 +40,9 @@ port() {
 xray() {
     # 安装Xray内核
     bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
-    # 生成所需随机参数
+    # 生成所需参数
     path=$(openssl rand -hex 6)
     uuid=$(cat /proc/sys/kernel/random/uuid)
-    psk=$(openssl rand -base64 16 | tr -d '\n')
-    psk_urlsafe=$(echo -n "$psk" | tr '+/' '-_')
     X25519Key=$(/usr/local/bin/xray x25519)
     PrivateKey=$(echo "${X25519Key}" | head -1 | awk '{print $3}')
     PublicKey=$(echo "${X25519Key}" | tail -n 1 | awk '{print $3}')
@@ -57,12 +55,31 @@ xray() {
   },
   "inbounds": [
     {
-      "port": ${PORT1},
-      "protocol": "shadowsocks",
+      "port": "${PORT1}",
+      "protocol": "vless",
       "settings": {
-        "method": "2022-blake3-aes-128-gcm",
-        "password": "${psk}",
-        "network": "tcp,udp"
+        "clients": [
+          {
+            "id": "${uuid}",
+            "flow": "xtls-rprx-vision"
+          }
+        ],
+        "decryption": "none"
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "dest": "1.1.1.1:443",
+          "serverNames": [
+            "www.tesla.com"
+          ],
+          "privateKey": "${PrivateKey}",
+          "shortIds": [
+            "",
+            "123abc"
+          ]
+        }
       }
     },
     {
@@ -83,7 +100,7 @@ xray() {
         "security": "reality",
         "realitySettings": {
           "show": false,
-          "dest": "www.tesla.com:443",
+          "dest": "1.1.1.1:443",
           "xver": 0,
           "serverNames": [
             "www.tesla.com"
@@ -138,10 +155,11 @@ EOF
     
     # 生成并保存客户端配置
     cat << EOF > /usr/local/etc/xray/config.txt
-ss://2022-blake3-aes-128-gcm:${psk_urlsafe}@${HOST_IP}:${PORT1}#${IP_COUNTRY}
 
-${IP_COUNTRY} = ss, ${HOST_IP}, ${PORT1}, encrypt-method=2022-blake3-aes-128-gcm, password=${psk}, udp-relay=true
+VLESS+TCP+REALITY
+vless://${uuid}@${HOST_IP}:${PORT1}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.tesla.com&fp=chrome&pbk=${PublicKey}&sid=123abc&type=tcp&headerType=none#${IP_COUNTRY}
 
+VLESS+XHTTP+REALITY
 vless://${uuid}@${HOST_IP}:${PORT2}?encryption=none&security=reality&sni=www.tesla.com&fp=chrome&pbk=${PublicKey}&sid=123abc&type=xhttp&path=%2F${path}&mode=auto#${IP_COUNTRY}
 EOF
 
