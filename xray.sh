@@ -42,7 +42,7 @@ xray() {
     bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
     # 生成所需参数
     path=$(openssl rand -hex 6)
-    uuid=$(cat /proc/sys/kernel/random/uuid)
+    uuid=$(/usr/local/bin/xray uuid)
     X25519Key=$(/usr/local/bin/xray x25519)
     PrivateKey=$(echo "${X25519Key}" | head -1 | awk '{print $3}')
     PublicKey=$(echo "${X25519Key}" | tail -n 1 | awk '{print $3}')
