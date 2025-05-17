@@ -73,7 +73,7 @@ xray() {
         "realitySettings": {
           "dest": "1.1.1.1:443",
           "serverNames": [
-            "www.yahoo.com"
+            "www.ua.edu"
           ],
           "privateKey": "${PrivateKey}",
           "shortIds": [
@@ -103,7 +103,7 @@ xray() {
           "dest": "1.1.1.1:443",
           "xver": 0,
           "serverNames": [
-            "www.yahoo.com"
+            "www.ua.edu"
           ],
           "privateKey": "${PrivateKey}",
           "shortIds": [
@@ -157,10 +157,10 @@ EOF
     cat << EOF > /usr/local/etc/xray/config.txt
 
 vless+tcp+reality
-vless://${uuid}@${HOST_IP}:${PORT1}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.yahoo.com&fp=chrome&pbk=${PublicKey}&sid=${shid}&type=tcp&headerType=none#${IP_COUNTRY}
+vless://${uuid}@${HOST_IP}:${PORT1}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.ua.edu&fp=chrome&pbk=${PublicKey}&sid=${shid}&type=tcp&headerType=none#${IP_COUNTRY}
 
 vless+xhttp+reality
-vless://${uuid}@${HOST_IP}:${PORT2}?encryption=none&security=reality&sni=www.yahoo.com&fp=chrome&pbk=${PublicKey}&sid=${shid}&type=xhttp&path=%2F${path}&mode=auto#${IP_COUNTRY}
+vless://${uuid}@${HOST_IP}:${PORT2}?encryption=none&security=reality&sni=www.ua.edu&fp=chrome&pbk=${PublicKey}&sid=${shid}&type=xhttp&path=%2F${path}&mode=auto#${IP_COUNTRY}
 EOF
 
     echo "Xray 安装完成"
