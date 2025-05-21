@@ -27,7 +27,7 @@ sudo systemctl status xray
 
 ## 协议优势
 
-## VLESS + XHTTP + REALITY 
+## [VLESS + XHTTP + REALITY](https://github.com/XTLS/Xray-core/discussions/4113) 
 
 | 核心特性 | 详细优势说明 |
 |:-------:|:------------|
