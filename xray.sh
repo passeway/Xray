@@ -143,6 +143,10 @@ EOF
 
     # 启动Xray服务
     systemctl enable xray.service && systemctl restart xray.service
+    if ! systemctl is-active --quiet xray.service; then
+      echo "Xray 启动失败，请检查日志：journalctl -u xray.service -e"
+      exit 1
+    fi
     
     # 获取IP并生成客户端配置
     HOST_IP=$(curl -s -4 http://www.cloudflare.com/cdn-cgi/trace | grep "ip" | awk -F "[=]" '{print $2}')
