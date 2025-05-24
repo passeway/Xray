@@ -144,7 +144,7 @@ EOF
     # 启动Xray服务
     systemctl enable xray.service && systemctl restart xray.service
     if ! systemctl is-active --quiet xray.service; then
-      echo "Xray 启动失败，请检查日志：journalctl -u xray.service -e"
+      echo "Xray 启动失败"
       exit 1
     fi
     
