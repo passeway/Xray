@@ -88,8 +88,7 @@ xray() {
       "settings": {
         "clients": [
           {
-            "id": "${uuid}",
-            "flow": ""
+            "id": "${uuid}"
           }
         ],
         "decryption": "none",
