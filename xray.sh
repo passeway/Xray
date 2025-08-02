@@ -57,6 +57,7 @@ xray() {
   "inbounds": [
     {
       "port": "${PORT1}",
+      "tag": "vless-tcp",
       "protocol": "vless",
       "settings": {
         "clients": [
@@ -83,19 +84,23 @@ xray() {
       }
     },
     {
-      "port": ${PORT2},
+      "port": "${PORT2}",
+      "tag": "vless-xhttp",
       "protocol": "vless",
       "settings": {
         "clients": [
           {
-            "id": "${uuid}"
+            "id": "${uuid}",
+            "flow": ""
           }
         ],
-        "decryption": "none",
-        "fallbacks": []
+        "decryption": "none"
       },
       "streamSettings": {
         "network": "xhttp",
+        "xhttpSettings": {
+            "path": "/${path}"
+        },   
         "security": "reality",
         "realitySettings": {
           "show": false,
@@ -107,18 +112,7 @@ xray() {
           "privateKey": "${PrivateKey}",
           "shortIds": [
             "${shid}"
-          ],
-          "fingerprint": "chrome"
-        },
-        "xhttpSettings": {
-          "path": "${path}",
-          "host": "",
-          "headers": {},
-          "scMaxBufferedPosts": 30,
-          "scMaxEachPostBytes": "1000000",
-          "noSSEHeader": false,
-          "xPaddingBytes": "100-1000",
-          "mode": "auto"
+          ]
         }
       },
       "sniffing": {
@@ -135,6 +129,10 @@ xray() {
     {
       "protocol": "freedom",
       "tag": "direct"
+    },
+    {
+      "protocol": "blackhole",
+      "tag": "block"
     }
   ]
 }
