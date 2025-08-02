@@ -72,7 +72,7 @@ xray() {
         "network": "tcp",
         "security": "reality",
         "realitySettings": {
-          "dest": "www.ua.edu:443",
+          "target": "www.ua.edu:443",
           "serverNames": [
             "www.ua.edu"
           ],
@@ -103,9 +103,7 @@ xray() {
         },   
         "security": "reality",
         "realitySettings": {
-          "show": false,
-          "dest": "www.ua.edu:443",
-          "xver": 0,
+          "target": "www.ua.edu:443",
           "serverNames": [
             "www.ua.edu"
           ],
