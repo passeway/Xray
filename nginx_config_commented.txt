@@ -1,0 +1,102 @@
+# 默认服务器配置块
+server {
+        # 监听80端口（HTTP），作为默认服务器
+        listen 80 default_server;
+        # 监听IPv6的80端口
+        listen [::]:80 default_server;
+        
+        # SSL配置部分（已注释掉）
+        # 如果需要HTTPS，可以取消注释以下两行
+        # listen 443 ssl default_server;
+        # listen [::]:443 ssl default_server;
+        #
+        # 注意：对于SSL流量应该禁用gzip压缩
+        # 参考：https://bugs.debian.org/773332
+        #
+        # 建议阅读ssl_ciphers配置以确保安全
+        # 参考：https://bugs.debian.org/765782
+        #
+        # ssl-cert包生成的自签名证书
+        # 生产环境中请勿使用！
+        #
+        # include snippets/snakeoil.conf;
+        
+        # 网站根目录设置
+        root /var/www/html;
+        
+        # 默认首页文件列表（按优先级排序）
+        # 如果使用PHP，需要将index.php添加到列表中
+        index index.html index.htm index.nginx-debian.html;
+        
+        # 服务器名称（_ 表示匹配所有域名）
+        server_name _;
+        
+        # 根路径的请求处理规则
+        location / {
+                # 文件查找顺序：
+                # 1. 先尝试作为文件处理
+                # 2. 再尝试作为目录处理  
+                # 3. 最后返回404错误
+                try_files $uri $uri/ =404;
+        }
+        
+        # 特定路径的反向代理配置
+        # /b7d7cac3796bb743 路径将被代理到本地8080端口的应用
+        location /b7d7cac3796bb743 {
+                # 代理目标地址（本地8080端口）
+                proxy_pass http://127.0.0.1:8080;
+                # 设置HTTP版本为1.1（支持长连接和WebSocket）
+                proxy_http_version 1.1;
+                # WebSocket升级协议头
+                proxy_set_header Upgrade $http_upgrade;
+                # WebSocket连接升级头
+                proxy_set_header Connection "upgrade";
+                # 传递原始Host头到后端服务
+                proxy_set_header Host $host;
+                # 传递客户端真实IP地址
+                proxy_set_header X-Real-IP $remote_addr;
+                # 传递完整的客户端IP转发链
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        }
+        
+        # PHP脚本处理配置（已注释掉）
+        # 如果需要处理PHP文件，取消注释以下配置
+        #location ~ \.php$ {
+        #       # 包含FastCGI PHP配置
+        #       include snippets/fastcgi-php.conf;
+        #
+        #       # 使用php-fpm（Unix socket方式）：
+        #       fastcgi_pass unix:/var/run/php/php7.4-fpm.sock;
+        #       # 使用php-cgi（TCP socket方式）：
+        #       fastcgi_pass 127.0.0.1:9000;
+        #}
+        
+        # 安全配置：拒绝访问.htaccess文件
+        # 当Apache和Nginx共用相同文档根目录时适用
+        #location ~ /\.ht {
+        #       deny all;
+        #}
+}
+
+# 虚拟主机配置示例（针对example.com域名）
+# 可以将此配置移动到sites-available/目录下的单独文件中
+# 然后创建符号链接到sites-enabled/目录来启用它
+#
+#server {
+#       # 监听HTTP端口
+#       listen 80;
+#       listen [::]:80;
+#
+#       # 指定域名
+#       server_name example.com;
+#
+#       # 该域名对应的网站根目录
+#       root /var/www/example.com;
+#       # 默认首页文件
+#       index index.html;
+#
+#       # 请求处理规则
+#       location / {
+#               try_files $uri $uri/ =404;
+#       }
+#}
