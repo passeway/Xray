@@ -1,30 +1,31 @@
 server {
     listen 80 default_server;
     listen [::]:80 default_server;
-    server_name cht.passeway.top;
+    server_name www.google.com;
+
     root /var/www/html;
     index index.html index.htm;
+
     location / {
         return 301 https://$host$request_uri;
     }
-    location /b7d7cac3796bb743 {
-        proxy_pass http://127.0.0.1:8080;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    }
 }
+
 server {
     listen 443 ssl http2;
     listen [::]:443 ssl http2;
-    server_name cht.passeway.top;
+    server_name www.google.com;
+
+    root /var/www/html;
+    index index.html index.htm;
+
     ssl_certificate /etc/letsencrypt/live/cht.passeway.top/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/cht.passeway.top/privkey.pem;
+
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_prefer_server_ciphers on;
+    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384;
+
     location / {
         proxy_pass http://127.0.0.1:9876;
         proxy_http_version 1.1;
@@ -33,7 +34,11 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
     }
-    location /b7d7cac3796bb743 {
+
+    location /b7d7cac379 {
+        if ($http_upgrade != "websocket") {
+            return 404;
+        }
         proxy_pass http://127.0.0.1:8080;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
@@ -41,5 +46,7 @@ server {
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_read_timeout 5d;
+        proxy_redirect off;
     }
 }
