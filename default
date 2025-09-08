@@ -50,3 +50,20 @@ server {
         proxy_redirect off;
     }
 }
+
+
+
+www.google.com {
+	handle /b7d7cac3796bb743 {
+		reverse_proxy 127.0.0.1:8080 {
+			header_up Host {host}
+			header_up X-Real-IP {remote_host}
+		}
+	}
+
+	reverse_proxy 127.0.0.1:9876 {
+		header_up Host {host}
+		header_up X-Real-IP {remote_host}
+	}
+}
+
