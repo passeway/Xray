@@ -10,7 +10,7 @@ echo "deb [signed-by=/etc/apt/keyrings/xanmod-archive-keyring.gpg] http://deb.xa
 ```
 sudo apt update && sudo apt install linux-xanmod-x64v3
 ```
-
+```
 xxx.passeway.com {
 	handle /b7d7cac3796bb743 {
 		reverse_proxy 127.0.0.1:8080 {
@@ -24,8 +24,8 @@ xxx.passeway.com {
 		header_up X-Real-IP {remote_host}
 	}
 }
-
-
+```
+```
 {
   "log": {
     "loglevel": "warning"
@@ -82,3 +82,4 @@ xxx.passeway.com {
     ]
   }
 }
+```
