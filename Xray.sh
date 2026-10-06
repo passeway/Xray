@@ -142,15 +142,11 @@ def region_name(path, address):
     data = json.loads(Path(path).read_text())
     if data.get('success') is not True or valid_ip(data.get('ip', '')) != valid_ip(address):
         raise ValueError('IP 地区查询失败')
-    parts = []
-    for value in (data.get('country'), data.get('city') or data.get('region')):
-        if not isinstance(value, str): continue
-        value = ' '.join(value.split())
-        if value and value not in parts: parts.append(value)
-    name = '-'.join(parts)
-    if not name or len(name) > 80 or any(ord(c) < 32 or ord(c) == 127 for c in name):
-        raise ValueError('IP 地区名称无效')
-    return name
+    code = data.get('country_code')
+    if not isinstance(code, str) or not re.fullmatch(r'[A-Za-z]{2}', code):
+        raise ValueError('IP 国家/地区代码无效')
+    return code.upper()
+
 
 def existing_meta(meta_path, client_path):
     if Path(meta_path).is_file():
@@ -311,7 +307,7 @@ prepare_clients() {
     name=$(config_tool get "$stage/previous.json" name) || return 1
     if [ -z "$address" ]; then address=$(public_ip) || return 1; fi
     if curl -fLsS --connect-timeout 4 --max-time 10 \
-        "https://ipwho.is/$address?lang=zh-CN&fields=success,ip,country,region,city" \
+        "https://ipwho.is/$address?fields=success,ip,country_code" \
         -o "$stage/region.json" 2>/dev/null &&
         region=$(config_tool region "$stage/region.json" "$address" 2>/dev/null); then
         name=$region
