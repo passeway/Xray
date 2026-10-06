@@ -147,6 +147,24 @@ systemctl() { echo SHOULD_NOT_RUN; }
     def test_lock_blocks_concurrent_mutation(self):
         result=self.shell('exec 8>"$LOCK_FILE"; flock -n 8; locked echo SHOULD_NOT_RUN',expected=1)
         self.assertNotIn('SHOULD_NOT_RUN',result.stdout)
+    def test_daemon_does_not_inherit_manager_lock(self):
+        result=self.shell("""
+start_daemon() {
+    if flock -n "$LOCK_FILE" true; then
+        echo LOCK_RELEASED_TOO_EARLY
+        return 1
+    fi
+    sleep 30 </dev/null >/dev/null 2>&1 &
+    echo "$!" >"$TMPDIR/daemon.pid"
+}
+trap 'if [ -f "$TMPDIR/daemon.pid" ]; then kill "$(cat "$TMPDIR/daemon.pid")" 2>/dev/null || :; fi' EXIT
+locked start_daemon || exit 1
+kill -0 "$(cat "$TMPDIR/daemon.pid")" || exit 1
+flock -n "$LOCK_FILE" true || exit 1
+echo LOCK_RELEASED_WITH_DAEMON_RUNNING
+""")
+        self.assertNotIn('LOCK_RELEASED_TOO_EARLY',result.stdout)
+        self.assertIn('LOCK_RELEASED_WITH_DAEMON_RUNNING',result.stdout)
     def test_ctrl_c_in_logs_returns(self):
         executable=self.root/'journalctl'
         executable.write_text('#!/bin/sh\necho LOG_READY\nexec sleep 30\n')

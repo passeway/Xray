@@ -582,7 +582,8 @@ locked() (
     mkdir -p -- "${LOCK_FILE%/*}" || return 1
     exec 9>"$LOCK_FILE" || return 1
     flock -n 9 || { fail "已有 Xray 管理操作正在运行"; return 1; }
-    "$@"
+    # Keep the lock in this waiting parent only; daemons must not inherit it.
+    ( exec 9>&-; "$@" )
 )
 show_menu() {
     local installed=false running=false
