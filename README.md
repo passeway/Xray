@@ -1,12 +1,20 @@
+<div align="center">
+
 # Xray
 
 ### 部署连接，简化运维。
 
-面向 Linux 的 Xray 部署与服务管理工具。一次安装，提供 VLESS Vision、VLESS XHTTP 与 Shadowsocks 2022 三种连接方式。
+面向 Linux 的 Xray 部署与服务管理工具。<br>
+一次安装，提供 VLESS Vision、VLESS XHTTP 与 Shadowsocks 2022 三种连接方式。
+
+[![Build](https://github.com/passeway/Xray/actions/workflows/check.yml/badge.svg?branch=main)](https://github.com/passeway/Xray/actions/workflows/check.yml)
+[![Xray Core](https://img.shields.io/badge/Xray-Core-18181b?style=flat-square)](https://github.com/XTLS/Xray-core)
+![Platform](https://img.shields.io/badge/Linux-AMD64%20%7C%20ARM64-52525b?style=flat-square)
+[![License](https://img.shields.io/github/license/passeway/Xray?style=flat-square&color=52525b)](LICENSE)
 
 [快速开始](#快速开始) · [连接方式](#连接方式) · [管理服务](#管理服务) · [技术文档](#技术文档) · [反馈问题](https://github.com/passeway/Xray/issues)
 
-[![Build](https://github.com/passeway/Xray/actions/workflows/check.yml/badge.svg?branch=main)](https://github.com/passeway/Xray/actions/workflows/check.yml)
+</div>
 
 ---
 
