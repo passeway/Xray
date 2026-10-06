@@ -13,7 +13,7 @@ import tempfile
 import time
 import unittest
 from unittest.mock import patch
-from urllib.parse import parse_qs, urlsplit
+from urllib.parse import parse_qs, urlsplit, unquote
 import zipfile
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -184,13 +184,34 @@ class HelperTests(unittest.TestCase):
             self.assertNotIn('flow',query)
             config['inbounds'][0]['port']=444
             self.assertEqual(urlsplit(NS['export_clients'](config,{'address':'203.0.113.1'},'core').strip()).port,444)
+    def test_add_ss_preserves_existing_inbounds_and_is_idempotent(self):
+        config={'inbounds':[{'protocol':'vless','port':443,'settings':{'clients':[{'id':'keep'}]}}]}
+        original=copy.deepcopy(config['inbounds'])
+        NS['add_ss'](config)
+        self.assertEqual(config['inbounds'][:1],original)
+        once=copy.deepcopy(config)
+        NS['add_ss'](config)
+        self.assertEqual(config,once)
+    def test_ss2022_export_round_trip_ipv6(self):
+        config=NS['add_ss']({'inbounds':[]})
+        config['inbounds'][0]['settings']['password']=base64.b64encode(bytes([251])*16).decode()
+        uri=urlsplit(NS['export_clients'](config,{'address':'2001:db8::1','name':'US'},'unused').strip())
+        self.assertEqual(uri.scheme,'ss')
+        self.assertEqual(uri.hostname,'2001:db8::1')
+        self.assertEqual(unquote(uri.username),'2022-blake3-aes-128-gcm')
+        self.assertEqual(unquote(uri.password),config['inbounds'][0]['settings']['password'])
+        self.assertEqual(uri.fragment,'US-ss2022')
     def test_new_config_has_distinct_ports_and_valid_identity(self):
         with patch.dict(NS,{'keypair':lambda *a: {'private':KEY}}):
             config=NS['new_config']('core')
-        a,b=config['inbounds']
+        a,b,ss=config['inbounds']
+        self.assertEqual(len({i['port'] for i in config['inbounds']}),3)
+        self.assertEqual(len(base64.b64decode(ss['settings']['password'])),16)
+        self.assertEqual(ss['settings']['network'],'tcp,udp')
         self.assertNotEqual(a['port'],b['port'])
         self.assertEqual(a['settings']['clients'][0]['flow'],'xtls-rprx-vision')
         self.assertEqual(b['settings']['clients'][0]['flow'],'')
         self.assertEqual(a['streamSettings']['realitySettings'],b['streamSettings']['realitySettings'])
 
 if __name__=='__main__': unittest.main()
+

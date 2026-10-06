@@ -130,10 +130,30 @@ def new_config(core):
                 'protocol':'vless','settings':{'clients':[{'id':identity,
                 'flow':'xtls-rprx-vision' if network == 'tcp' else ''}],'decryption':'none'},
                 'streamSettings':stream})
-        return {'log':{'loglevel':'warning'},'inbounds':inbounds,
-                'outbounds':[{'protocol':'freedom','tag':'direct'},{'protocol':'blackhole','tag':'block'}]}
+        return add_ss({'log':{'loglevel':'warning'},'inbounds':inbounds,
+                'outbounds':[{'protocol':'freedom','tag':'direct'},{'protocol':'blackhole','tag':'block'}]})
     finally:
         for sock in listeners: sock.close()
+
+def add_ss(config):
+    inbounds = config.setdefault('inbounds', [])
+    if any(item.get('protocol') == 'shadowsocks' for item in inbounds):
+        return config
+    used = {str(item.get('port')) for item in inbounds}
+    for _ in range(128):
+        port = secrets.randbelow(55000) + 10000
+        if str(port) in used: continue
+        with socket.socket() as tcp, socket.socket(type=socket.SOCK_DGRAM) as udp:
+            try:
+                tcp.bind(('0.0.0.0', port)); udp.bind(('0.0.0.0', port))
+            except OSError:
+                continue
+            inbounds.append({'listen':'0.0.0.0','port':port,'tag':'ss2022',
+                'protocol':'shadowsocks','settings':{'method':'2022-blake3-aes-128-gcm',
+                'password':base64.b64encode(secrets.token_bytes(16)).decode(),
+                'network':'tcp,udp'}})
+            return config
+    raise ValueError('无法找到可用的 SS2022 TCP/UDP 端口')
 
 def valid_ip(value):
     return str(ipaddress.ip_address(value.strip()))
@@ -173,6 +193,19 @@ def export_clients(config, meta, core):
         raise ValueError('节点名称不能包含控制字符，且不能超过 80 字符')
     lines, public_keys = [], {}
     for item in config.get('inbounds',[]):
+        if item.get('protocol') == 'shadowsocks':
+            settings = item['settings']
+            method, password = settings['method'], settings['password']
+            if method != '2022-blake3-aes-128-gcm' or settings.get('users'):
+                raise ValueError('当前 SS 导出只支持单用户 SS2022 AES-128-GCM')
+            if len(base64.b64decode(password, validate=True)) != 16:
+                raise ValueError('SS2022 AES-128 密钥必须为 16 字节')
+            port = int(item['port'])
+            if not 1 <= port <= 65535: raise ValueError('监听端口无效')
+            label = name+'-'+item.get('tag','ss2022')
+            lines.append('ss://'+quote(method,safe='')+':'+quote(password,safe='')
+                         +'@'+authority+':'+str(port)+'#'+quote(label,safe=''))
+            continue
         if item.get('protocol') != 'vless': continue
         stream = item.get('streamSettings',{})
         network = stream.get('network','tcp')
@@ -203,7 +236,7 @@ def export_clients(config, meta, core):
             label = name+'-'+tag+(('-'+str(index)) if len(item['settings']['clients'])>1 else '')
             lines.append('vless://'+quote(str(user['id']),safe='')+'@'+authority+':'+str(port)
                          +'?'+urlencode(query,quote_via=quote)+'#'+quote(label,safe=''))
-    if not lines: raise ValueError('没有可导出的 VLESS + REALITY 入站')
+    if not lines: raise ValueError('没有可导出的 VLESS + REALITY 或 SS2022 入站')
     return '\n\n'.join(lines)+'\n'
 
 def unpack(archive, digest_file, directory):
@@ -222,6 +255,9 @@ def unpack(archive, digest_file, directory):
 def main():
     action, args=sys.argv[1],sys.argv[2:]
     if action=='new': print(json.dumps(new_config(args[0]),indent=2))
+    elif action=='add-ss': print(json.dumps(add_ss(read_config(args[0])),indent=2))
+    elif action=='has-ss':
+        sys.exit(0 if any(i.get('protocol')=='shadowsocks' for i in read_config(args[0]).get('inbounds',[])) else 1)
     elif action=='clients':
         print(export_clients(read_config(args[0]),json.loads(Path(args[1]).read_text()),args[2]),end='')
     elif action=='meta': print(json.dumps({'address':valid_ip(args[0]),'name':args[1]},ensure_ascii=False))
@@ -437,6 +473,27 @@ refresh_clients() (
         service_identity && secure_config && write_clients "$stage" || return 1
     cat "$CLIENT_FILE"
 )
+add_ss_service() (
+    [ -x "$BINARY" ] && [ -f "$CONFIG_FILE" ] || { fail "Xray 尚未安装"; return 1; }
+    require_platform && assert_service_layout && install_dependencies || return 1
+    if config_tool has-ss "$CONFIG_FILE"; then
+        printf '已有 Shadowsocks 入站，保留现有配置；请选择 8 查看链接。\n'
+        return 0
+    fi
+    umask 077
+    local stage
+    stage=$(mktemp -d) || return 1
+    trap 'rm -rf -- "$stage"' EXIT
+    config_tool add-ss "$CONFIG_FILE" >"$stage/config.json" &&
+        validate_config "$BINARY" "$stage/config.json" &&
+        prepare_clients "$stage/config.json" "$BINARY" "$stage" &&
+        service_identity && secure_config || return 1
+    atomic_write "$stage/config.json" "$CONFIG_FILE" 640 "root:$SERVICE_GROUP" || return 1
+    restart_service || { fail "配置已写入，但重启失败，请查看日志。"; return 1; }
+    write_clients "$stage" || return 1
+    printf 'SS2022 已添加，请放行其 TCP 和 UDP 端口。\n'
+    cat "$CLIENT_FILE"
+)
 uninstall_xray() {
     local answer
     read -r -p '确认卸载 Xray 并删除配置？[y/N]: ' answer || return 0
@@ -466,7 +523,8 @@ show_menu() {
     printf '%s\n' '1. 安装 Xray 服务' '2. 卸载 Xray 服务'
     if "$installed"; then
         printf '%s\n' '3. 启动 Xray 服务' '4. 停止 Xray 服务' '5. 重启 Xray 服务' \
-            '6. 检查 Xray 状态' '7. 查看 Xray 日志' '8. 查看 Xray 配置' '9. 更新 Xray 内核'
+            '6. 检查 Xray 状态' '7. 查看 Xray 日志' '8. 查看 Xray 配置' '9. 更新 Xray 内核' \
+            '10. 添加 SS2022 (AES-128-GCM)'
     fi
     printf '%s\n' '0. 退出' '====================='
     read -r -p '请输入选项编号: ' choice
@@ -488,6 +546,7 @@ main() {
             7) show_logs follow;;
             8) locked refresh_clients;;
             9) locked update_xray;;
+            10) locked add_ss_service;;
             0) return 0;;
             *) echo '无效选项';;
         esac

@@ -20,11 +20,11 @@
 
 ## 概览
 
-Xray 将 VLESS + REALITY 的安装、配置与 systemd 服务管理整合到一个交互式脚本中。一次安装生成 TCP + Vision 与 XHTTP 两组入站，并导出可直接导入客户端的分享链接。
+Xray 将 VLESS + REALITY 的安装、配置与 systemd 服务管理整合到一个交互式脚本中。一次安装生成 TCP + Vision、XHTTP 与 SS2022 三组入站，并导出可直接导入客户端的分享链接。
 
-- **双传输配置** — 同时部署 TCP + Vision 和 XHTTP，分别使用独立端口。
+- **三组连接配置** — TCP + Vision、XHTTP 与 SS2022，分别使用独立端口。
 - **内核校验** — 下载官方发行包并验证 SHA256；更新前使用新内核检查现有配置。
-- **自动连接信息** — 生成 UUID、REALITY 密钥、short-id 与 XHTTP 路径，根据公网 IP 的两位国家/地区代码自动命名节点。
+- **自动连接信息** — 生成 UUID、REALITY 密钥、SS2022 密钥、short-id 与 XHTTP 路径，根据公网 IP 的两位国家/地区代码自动命名节点。
 - **统一运维入口** — 管理服务状态、实时日志、内核更新与客户端链接导出。
 
 ## 快速开始
@@ -36,7 +36,7 @@ Xray 将 VLESS + REALITY 的安装、配置与 systemd 服务管理整合到一�
 | 操作系统 | 使用 systemd 的 Debian / Ubuntu、RHEL / Fedora 系 Linux |
 | 处理器架构 | AMD64、ARM64 |
 | 执行环境 | root 权限，已安装 `bash` 与 `curl` |
-| 客户端 | 支持对应传输方式及 REALITY 的客户端与内核 |
+| 客户端 | 支持所选协议的客户端与内核；SS2022 需支持 AES-128-GCM 2022 |
 
 依赖通过 `apt-get`、`dnf` 或 `yum` 按需安装。当前未适配 Alpine / OpenRC。
 
@@ -47,17 +47,17 @@ bash <(curl -fsSL https://xray-bay.vercel.app)
 ```
 
 1. 选择 **1 · 安装 Xray 服务**。
-2. 在云安全组和服务器防火墙中放行生成的两个 TCP 端口。
-3. 将输出的 `vless://` 链接导入客户端。
+2. 在云安全组和服务器防火墙中放行两组 VLESS 的 TCP 端口，以及 SS2022 的 TCP/UDP 端口。
+3. 将输出的 `vless://` 或 `ss://` 链接导入客户端。
 
-节点名称前缀自动使用服务器公网 IP 的两位大写国家/地区代码，如 `US`、`JP`、`HK`，无需输入确认。导出名称示例：`US-vless-tcp`、`US-vless-xhttp`。地区查询失败时保留已有名称；新安装回退到公网 IP。
+节点名称前缀自动使用服务器公网 IP 的两位大写国家/地区代码，如 `US`、`JP`、`HK`，无需输入确认。导出名称示例：`US-vless-tcp`、`US-vless-xhttp`、`US-ss2022`。地区查询失败时保留已有名称；新安装回退到公网 IP。
 
 > [!NOTE]
 > 检测到已有程序、配置或服务时，脚本会阻止重复安装。已有安装请使用菜单 **9** 更新内核。
 
 ## 连接配置
 
-两组入站均使用 VLESS + REALITY，共用本次生成的 UUID、REALITY 密钥对与 short-id。
+前两组入站使用 VLESS + REALITY，共用本次生成的 UUID、REALITY 密钥对与 short-id。
 
 | 参数 | TCP + Vision | XHTTP |
 | :--- | :--- | :--- |
@@ -69,6 +69,18 @@ bash <(curl -fsSL https://xray-bay.vercel.app)
 | 默认 SNI | `www.ua.edu` | `www.ua.edu` |
 
 以实际导出的链接为准。客户端的地址、端口、UUID、公钥、short-id 与 SNI 必须匹配对应入站；XHTTP 还需核对路径。
+
+### SS2022
+
+使用 `2022-blake3-aes-128-gcm`，随机生成独立的 16 字节预共享密钥，以 Base64 保存。同一个独立端口监听 TCP 和 UDP，导出标准 `ss://` 分享链接。SS2022 不使用 REALITY、SNI 或 Vision Flow。
+
+**已有安装**：运行最新版脚本，选择 **10 · 添加 SS2022**。脚本会保留原有入站及凭据，校验新配置后写入并重启服务；重复选择不会重置已有 Shadowsocks 配置。菜单 **9** 仍只更新内核，不自动增加入站。
+
+### XHTTP 参数选择
+
+当前配置面向直连 REALITY：保留随机 `path` 与 `mode=auto`，Flow 留空。客户端和服务端路径须一致。按[官方指南](https://github.com/XTLS/Xray-core/discussions/4113)，通常只需配置路径，其余使用默认值。
+
+不额外固定 `host`、XMUX 并发数或缓冲区参数；这些参数应在有明确网络瓶颈或 CDN/反代需求时调整。当前 REALITY 配置不应直接改为 H3；H3 需要另行配置 QUIC/TLS。
 
 ### 导出与同步
 
@@ -95,6 +107,7 @@ cat /usr/local/etc/xray/config.txt
 | `7` | 查看日志 | 跟踪实时日志，`Ctrl+C` 返回 |
 | `8` | 查看配置 | 重新生成并显示客户端分享链接 |
 | `9` | 更新内核 | 校验新内核、替换并重启服务 |
+| `10` | 添加 SS2022 | 为已有安装补充 SS2022，保留原有入站 |
 | `0` | 退出 | 退出管理工具 |
 
 ### 更新行为
@@ -141,9 +154,9 @@ REALITY 私钥留在服务端，客户端链接仅包含对应公钥。地区命
 
 ### 验证范围
 
-仓库 CI 在 Debian、Ubuntu 与 Rocky Linux 容器中检查脚本语法、失败处理和配置导出，并使用官方内核验证 TCP / XHTTP 代理流量。
+仓库 CI 在 Debian、Ubuntu 与 Rocky Linux 容器中检查脚本语法、失败处理和配置导出，并使用官方内核验证 TCP + Vision、XHTTP 与 SS2022 的 TCP 代理流量。
 
-容器测试不覆盖真实 VPS 的 systemd 开机自启与 ARM64 实机运行。
+SS2022 原生 UDP 还需实际网络验证。容器测试不覆盖真实 VPS 的 systemd 开机自启与 ARM64 实机运行。
 
 ## 故障排查
 
@@ -162,3 +175,4 @@ REALITY 私钥留在服务端，客户端链接仅包含对应公钥。地区命
 ---
 
 本项目为独立的安装与管理工具，基于 [XTLS/Xray-core](https://github.com/XTLS/Xray-core)。官方安装项目见 [XTLS/Xray-install](https://github.com/XTLS/Xray-install)，许可证见 [LICENSE](LICENSE)。
+

@@ -9,7 +9,7 @@ import tempfile
 import threading
 import time
 import unittest
-from urllib.parse import parse_qs, urlsplit
+from urllib.parse import parse_qs, urlsplit, unquote
 from test_manager import NS, CORE
 
 def free_port():
@@ -26,7 +26,7 @@ class Origin(http.server.BaseHTTPRequestHandler):
 
 @unittest.skipUnless(CORE and Path(CORE).is_file(),'XRAY_TEST_BINARY is required')
 class TrafficTests(unittest.TestCase):
-    def test_exported_tcp_and_xhttp_links_reach_origin(self):
+    def test_exported_vless_and_ss2022_links_reach_origin(self):
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory); processes=[]; logs=[]
             origin=http.server.ThreadingHTTPServer(('127.0.0.1',0),Origin)
@@ -55,6 +55,7 @@ class TrafficTests(unittest.TestCase):
                 config=NS['new_config'](CORE)
                 for inbound in config['inbounds']:
                     inbound['listen']='127.0.0.1'
+                    if inbound['protocol'] != 'vless': continue
                     reality=inbound['streamSettings']['realitySettings']
                     reality['target']='127.0.0.1:'+str(tls_port)
                     reality['serverNames']=['example.test']
@@ -66,21 +67,28 @@ class TrafficTests(unittest.TestCase):
                 for line in exported.splitlines():
                     if not line: continue
                     uri=urlsplit(line); query={k:v[0] for k,v in parse_qs(uri.query,keep_blank_values=True).items()}
-                    with self.subTest(network=query['type']):
+                    network=query.get('type','ss2022')
+                    with self.subTest(network=network):
                         proxy_port=free_port()
-                        stream={'network':query['type'],'security':'reality','realitySettings':{
-                            'serverName':query['sni'],'fingerprint':query['fp'],
-                            'publicKey':query['pbk'],'shortId':query['sid']}}
-                        if query['type']=='xhttp':
-                            stream['xhttpSettings']={'path':query['path'],'mode':query['mode']}
+                        if uri.scheme == 'ss':
+                            outbound={'protocol':'shadowsocks','settings':{'servers':[{
+                                'address':uri.hostname,'port':uri.port,
+                                'method':unquote(uri.username),'password':unquote(uri.password)}]}}
+                        else:
+                            stream={'network':query['type'],'security':'reality','realitySettings':{
+                                'serverName':query['sni'],'fingerprint':query['fp'],
+                                'publicKey':query['pbk'],'shortId':query['sid']}}
+                            if query['type']=='xhttp':
+                                stream['xhttpSettings']={'path':query['path'],'mode':query['mode']}
+                            outbound={'protocol':'vless','settings':{'vnext':[{'address':uri.hostname,
+                                'port':uri.port,'users':[{'id':uri.username,'encryption':'none','flow':query.get('flow','')}]}]},
+                                'streamSettings':stream}
                         client={'log':{'loglevel':'warning'},'inbounds':[{'listen':'127.0.0.1','port':proxy_port,
                             'protocol':'socks','settings':{'auth':'noauth','udp':False}}],
-                            'outbounds':[{'protocol':'vless','settings':{'vnext':[{'address':uri.hostname,
-                            'port':uri.port,'users':[{'id':uri.username,'encryption':'none','flow':query.get('flow','')}]}]},
-                            'streamSettings':stream}]}
-                        client_file=root/('client-'+query['type']+'.json'); client_file.write_text(json.dumps(client))
+                            'outbounds':[outbound]}
+                        client_file=root/('client-'+network+'.json'); client_file.write_text(json.dumps(client))
                         subprocess.run([CORE,'run','-test','-config',str(client_file)],check=True,capture_output=True)
-                        process=launch([CORE,'run','-config',str(client_file)],'client-'+query['type'])
+                        process=launch([CORE,'run','-config',str(client_file)],'client-'+network)
                         wait_port(proxy_port,process)
                         result=subprocess.run(['curl','--fail','--silent','--show-error','--max-time','12',
                             '--noproxy','','--proxy','socks5h://127.0.0.1:'+str(proxy_port),
@@ -104,3 +112,4 @@ class TrafficTests(unittest.TestCase):
                 for log in logs: log.close()
 
 if __name__=='__main__': unittest.main()
+
