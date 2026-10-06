@@ -20,7 +20,7 @@
 
 ## 概览
 
-Xray 将 VLESS + REALITY 的安装、配置与 systemd 服务管理整合到一个交互式脚本中。一次安装生成 TCP + Vision、XHTTP 与 SS2022 三组入站，并导出可直接导入客户端的分享链接。
+Xray 将 VLESS + REALITY、Shadowsocks 2022 的部署与 systemd 服务管理整合到一个交互式脚本中。一次安装生成 TCP + Vision、XHTTP 与 SS2022 三组入站，并导出可直接导入客户端的分享链接。
 
 - **三组连接配置** — TCP + Vision、XHTTP 与 SS2022，分别使用独立端口。
 - **内核校验** — 下载官方发行包并验证 SHA256；更新前使用新内核检查现有配置。
@@ -46,7 +46,7 @@ Xray 将 VLESS + REALITY 的安装、配置与 systemd 服务管理整合到一�
 bash <(curl -fsSL https://xray-bay.vercel.app)
 ```
 
-1. 选择 **1 · 安装 Xray 服务**。
+1. 选择 **1 · 安装 Xray 服务**，自动生成三组节点。
 2. 在云安全组和服务器防火墙中放行两组 VLESS 的 TCP 端口，以及 SS2022 的 TCP/UDP 端口。
 3. 将输出的 `vless://` 或 `ss://` 链接导入客户端。
 
@@ -57,24 +57,23 @@ bash <(curl -fsSL https://xray-bay.vercel.app)
 
 ## 连接配置
 
-前两组入站使用 VLESS + REALITY，共用本次生成的 UUID、REALITY 密钥对与 short-id。
+新安装默认启用以下三组节点，各使用一个独立的随机端口。
 
-| 参数 | TCP + Vision | XHTTP |
-| :--- | :--- | :--- |
-| 传输方式 | `tcp` | `xhttp` |
-| Flow | `xtls-rprx-vision` | 留空 |
-| 监听端口 | 随机生成 | 随机生成，与 TCP 入站不同 |
-| 路径 | 无 | 随机生成 |
-| 模式 | — | `auto` |
-| 默认 SNI | `www.ua.edu` | `www.ua.edu` |
+| 参数 | VLESS · TCP + Vision | VLESS · XHTTP | Shadowsocks 2022 |
+| :--- | :--- | :--- | :--- |
+| 加密 / 安全 | REALITY | REALITY | `2022-blake3-aes-128-gcm` |
+| 放行端口 | TCP | TCP | TCP + UDP |
+| 认证 | UUID + REALITY 密钥 | UUID + REALITY 密钥 | 独立 16 字节预共享密钥 |
+| Flow | `xtls-rprx-vision` | 留空 | 不适用 |
+| 路径 | 不适用 | 随机生成 | 不适用 |
+| 模式 | — | `auto` | — |
+| 默认 SNI | `www.ua.edu` | `www.ua.edu` | 不适用 |
+| 分享链接 | `vless://` | `vless://` | `ss://` |
+| 名称示例 | `US-vless-tcp` | `US-vless-xhttp` | `US-ss2022` |
 
-以实际导出的链接为准。客户端的地址、端口、UUID、公钥、short-id 与 SNI 必须匹配对应入站；XHTTP 还需核对路径。
+两组 VLESS 入站共用本次生成的 UUID、REALITY 密钥对与 short-id。客户端参数应与对应入站保持一致，XHTTP 还需核对路径。
 
-### SS2022
-
-使用 `2022-blake3-aes-128-gcm`，随机生成独立的 16 字节预共享密钥，以 Base64 保存。同一个独立端口监听 TCP 和 UDP，导出标准 `ss://` 分享链接。SS2022 不使用 REALITY、SNI 或 Vision Flow。
-
-新安装默认包含 SS2022。菜单 **9** 仅更新内核，保留现有入站配置，不自动增加入站。
+SS2022 密钥独立生成，以 Base64 保存；其端口同时监听 TCP 和 UDP。客户端须支持 `2022-blake3-aes-128-gcm`，无需配置 REALITY、SNI 或 Vision Flow。
 
 ### XHTTP 参数选择
 
@@ -98,7 +97,7 @@ cat /usr/local/etc/xray/config.txt
 
 | 选项 | 功能 | 行为 |
 | :---: | :--- | :--- |
-| `1` | 安装服务 | 下载内核、生成配置并启用服务 |
+| `1` | 安装服务 | 下载内核、生成三组节点并启用服务 |
 | `2` | 卸载服务 | 确认后删除服务与配置 |
 | `3` | 启动服务 | 校验配置并启动；已运行时会重启 |
 | `4` | 停止服务 | 停止当前服务 |
@@ -111,7 +110,7 @@ cat /usr/local/etc/xray/config.txt
 
 ### 更新行为
 
-更新保留现有端口、UUID、密钥及服务端配置，沿用原服务运行用户。安装只补齐所需依赖，不执行整机软件升级。
+菜单 **9** 仅更新内核，保留现有端口、UUID、密钥及服务端配置，沿用原服务运行用户。旧安装不会因更新内核自动增加 SS2022；菜单 **8** 仅导出现有入站的链接。安装只补齐所需依赖，不执行整机软件升级。
 
 脚本不创建备份，也不提供自动回滚。新内核在替换前须通过配置校验；替换后的重启若失败，脚本会报告错误并保留日志供排查。
 
@@ -165,7 +164,7 @@ SS2022 原生 UDP 还需实际网络验证。容器测试不覆盖真实 VPS 的
 | 客户端连接超时 | 监听端口、云安全组、服务器防火墙 |
 | REALITY 握手失败 | UUID、公钥、short-id 与 SNI |
 | TCP 可用，XHTTP 不可用 | 客户端内核支持、XHTTP 路径、Flow 是否留空 |
-| 客户端仍显示旧配置 | 使用菜单 **8** 重新导出，再导入客户端 |
+| SS2022 无法连接 | 客户端是否支持指定加密方式、密钥和端口是否一致 |\n| SS2022 TCP 可用，UDP 不可用 | 同端口 UDP 放行情况、客户端 UDP 支持与网络连通性 |\n| 客户端仍显示旧配置 | 使用菜单 **8** 重新导出，再导入客户端 |
 
 提交问题时，请附上操作系统、Xray 版本、客户端名称与版本，以及隐藏凭据后的相关日志。
 
@@ -174,4 +173,3 @@ SS2022 原生 UDP 还需实际网络验证。容器测试不覆盖真实 VPS 的
 ---
 
 本项目为独立的安装与管理工具，基于 [XTLS/Xray-core](https://github.com/XTLS/Xray-core)。官方安装项目见 [XTLS/Xray-install](https://github.com/XTLS/Xray-install)，许可证见 [LICENSE](LICENSE)。
-
