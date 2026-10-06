@@ -138,6 +138,20 @@ def new_config(core):
 def valid_ip(value):
     return str(ipaddress.ip_address(value.strip()))
 
+def region_name(path, address):
+    data = json.loads(Path(path).read_text())
+    if data.get('success') is not True or valid_ip(data.get('ip', '')) != valid_ip(address):
+        raise ValueError('IP 地区查询失败')
+    parts = []
+    for value in (data.get('country'), data.get('city') or data.get('region')):
+        if not isinstance(value, str): continue
+        value = ' '.join(value.split())
+        if value and value not in parts: parts.append(value)
+    name = '-'.join(parts)
+    if not name or len(name) > 80 or any(ord(c) < 32 or ord(c) == 127 for c in name):
+        raise ValueError('IP 地区名称无效')
+    return name
+
 def existing_meta(meta_path, client_path):
     if Path(meta_path).is_file():
         meta = json.loads(Path(meta_path).read_text())
@@ -218,6 +232,7 @@ def main():
     elif action=='existing-meta': print(json.dumps(existing_meta(*args)))
     elif action=='get': print(json.loads(Path(args[0]).read_text()).get(args[1],''))
     elif action=='ip': print(valid_ip(args[0]))
+    elif action=='region': print(region_name(*args))
     elif action=='unpack': unpack(*args)
     elif action=='version':
         value=json.loads(Path(args[0]).read_text())['tag_name']
@@ -290,14 +305,19 @@ public_ip() {
     return 1
 }
 prepare_clients() {
-    local config=$1 core=$2 stage=$3 address name
+    local config=$1 core=$2 stage=$3 address name region
     config_tool existing-meta "$META_FILE" "$CLIENT_FILE" >"$stage/previous.json" || return 1
     address=$(config_tool get "$stage/previous.json" address) || return 1
     name=$(config_tool get "$stage/previous.json" name) || return 1
     if [ -z "$address" ]; then address=$(public_ip) || return 1; fi
-    if [ -z "$name" ]; then
-        read -r -p '节点名称前缀 [Xray]: ' name || return 1
-        name=${name:-Xray}
+    if curl -fLsS --connect-timeout 4 --max-time 10 \
+        "https://ipwho.is/$address?lang=zh-CN&fields=success,ip,country,region,city" \
+        -o "$stage/region.json" 2>/dev/null &&
+        region=$(config_tool region "$stage/region.json" "$address" 2>/dev/null); then
+        name=$region
+    else
+        name=${name:-$address}
+        printf 'IP 地区查询失败，使用节点名称前缀: %s\n' "$name" >&2
     fi
     config_tool meta "$address" "$name" >"$stage/meta.json" &&
         config_tool clients "$config" "$stage/meta.json" "$core" >"$stage/client.txt"
@@ -446,7 +466,8 @@ show_menu() {
     printf '=== Xray 管理工具 ===\n'
     if "$installed"; then echo '安装状态: 已安装'; else echo '安装状态: 未安装'; fi
     if "$running"; then echo '运行状态: 已运行'; else echo '运行状态: 未运行'; fi
-    printf '\n%s\n' '1. 安装 Xray 服务' '2. 卸载 Xray 服务'
+    printf '\n'
+    printf '%s\n' '1. 安装 Xray 服务' '2. 卸载 Xray 服务'
     if "$installed"; then
         printf '%s\n' '3. 启动 Xray 服务' '4. 停止 Xray 服务' '5. 重启 Xray 服务' \
             '6. 检查 Xray 状态' '7. 查看 Xray 日志' '8. 查看 Xray 配置' '9. 更新 Xray 内核'
