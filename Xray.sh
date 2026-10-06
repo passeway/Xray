@@ -334,7 +334,8 @@ assert_service_layout() {
     if [ "$INIT_SYSTEM" = openrc ]; then
         # Accept only this manager's generated service; conf.d overrides may alter its identity or command.
         [ ! -s "$OPENRC_CONF" ] && [ ! -L "$OPENRC_FILE" ] &&
-            cmp -s "$OPENRC_FILE" <(SERVICE_USER=xray SERVICE_GROUP=$(id -gn xray) create_service /dev/stdout) || {
+            python3 -c 'import pathlib,sys; sys.exit(pathlib.Path(sys.argv[1]).read_bytes() != pathlib.Path(sys.argv[2]).read_bytes())' \
+                "$OPENRC_FILE" <(SERVICE_USER=xray SERVICE_GROUP=$(id -gn xray) create_service /dev/stdout) || {
             fail "OpenRC 服务与本脚本模板不一致，或存在 conf.d 覆盖，停止操作"; return 1;
         }
         return 0
