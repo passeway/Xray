@@ -106,6 +106,11 @@ systemctl() { echo SHOULD_NOT_RUN; }
         self.assertIn('APT:update',result.stdout)
         self.assertIn('APT:install',result.stdout)
         self.assertNotIn('upgrade',result.stdout)
+    def test_rpm_dependencies_preserve_minimal_curl_and_coreutils(self):
+        result=self.shell('command() { if [ "$2" = python3 ]; then return 1; fi; builtin command "$@"; }; package_manager() { echo dnf; }; dnf() { echo "DNF:$*"; }; install_dependencies')
+        self.assertIn('DNF:install',result.stdout)
+        self.assertNotIn(' coreutils',result.stdout)
+        self.assertNotIn(' curl',result.stdout)
     def test_incompatible_service_layout_is_rejected(self):
         self.shell('systemctl() { echo "{ path=/opt/custom/xray ; argv[]=/opt/custom/xray run -confdir /etc/custom ; }"; }; assert_service_layout',expected=1)
         self.shell('systemctl() { echo "{ path=$BINARY ; argv[]=$BINARY run -config $CONFIG_FILE ; }"; }; assert_service_layout')

@@ -47,7 +47,12 @@ install_dependencies() {
         DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
             curl python3 ca-certificates coreutils util-linux passwd
     else
-        "$manager" install -y curl python3 ca-certificates coreutils util-linux shadow-utils
+        local packages=(python3 ca-certificates util-linux shadow-utils)
+        command -v curl >/dev/null || packages+=(curl)
+        if ! command -v install >/dev/null || ! command -v mktemp >/dev/null; then
+            packages+=(coreutils)
+        fi
+        "$manager" install -y "${packages[@]}"
     fi
 }
 architecture() {

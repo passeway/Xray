@@ -28,7 +28,7 @@ jobs:
               apt-get update
               apt-get install -y --no-install-recommends bash python3 curl openssl ca-certificates coreutils util-linux passwd
             else
-              dnf install -y python3 openssl ca-certificates coreutils util-linux shadow-utils
+              dnf install -y python3 openssl ca-certificates util-linux shadow-utils
               command -v curl >/dev/null || dnf install -y curl
             fi
             bash -n Xray.sh
