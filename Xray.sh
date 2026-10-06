@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Xray management for systemd hosts. Temporary files are staging files, not backups.
+# Xray management for systemd and OpenRC hosts. Temporary files are staging files, not backups.
 BINARY=/usr/local/bin/xray
 CONFIG_DIR=/usr/local/etc/xray
 CONFIG_FILE="$CONFIG_DIR/config.json"
@@ -9,33 +9,69 @@ ASSET_DIR=/usr/local/share/xray
 UNIT_FILE=/etc/systemd/system/xray.service
 LOCK_FILE=/run/lock/xray-manager.lock
 SERVICE=xray
+INIT_SYSTEM=systemd
+OPENRC_FILE=/etc/init.d/xray
+OPENRC_CONF=/etc/conf.d/xray
+LOG_FILE=/var/log/xray/xray.log
+OS_RELEASE=/etc/os-release
 
 fail() { printf '错误: %s\n' "$*" >&2; return 1; }
 is_installed() { [ -e "$BINARY" ] || [ -e "$CONFIG_FILE" ]; }
-is_running() { systemctl is-active --quiet "$SERVICE"; }
+is_running() { service_action running; }
+service_action() {
+    local action=$1
+    if [ "$INIT_SYSTEM" = openrc ]; then
+        case "$action" in
+            running|status) rc-service "$SERVICE" status;;
+            enable) rc-update add "$SERVICE" default;;
+            disable) rc-update del "$SERVICE" default;;
+            reload) return 0;;
+            exists) [ -e "$OPENRC_FILE" ];;
+            *) rc-service "$SERVICE" "$action";;
+        esac
+    else
+        case "$action" in
+            running) systemctl is-active --quiet "$SERVICE";;
+            status) systemctl status "$SERVICE" --no-pager -l;;
+            exists) systemctl cat "$SERVICE" >/dev/null 2>&1;;
+            reload) systemctl daemon-reload;;
+            *) systemctl "$action" "$SERVICE";;
+        esac
+    fi
+}
+select_init() {
+    if command -v systemctl >/dev/null && [ -d /run/systemd/system ]; then
+        INIT_SYSTEM=systemd
+    elif command -v rc-service >/dev/null && command -v rc-update >/dev/null && [ -d /run/openrc ]; then
+        INIT_SYSTEM=openrc
+        UNIT_FILE=$OPENRC_FILE
+    else
+        fail "需要正在运行的 systemd 或 OpenRC（不支持未启动 init 的普通容器）"
+    fi
+}
 fetch() { curl -fLsS --retry 2 --connect-timeout 8 --max-time 180 "$@"; }
 
 package_manager() {
     local ID
-    [ -r /etc/os-release ] || return 1
-    . /etc/os-release
+    [ -r "$OS_RELEASE" ] || return 1
+    . "$OS_RELEASE"
     case "$ID" in
+        alpine) echo apk;;
         debian|ubuntu) echo apt-get;;
         fedora|rhel|centos|rocky|almalinux|ol|amzn)
             if command -v dnf >/dev/null; then echo dnf
             elif command -v yum >/dev/null; then echo yum
             else return 1; fi;;
-        *) fail "当前仅支持使用 systemd 的 Debian/Ubuntu 和 RHEL/Fedora 系系统";;
+        *) fail "当前支持 Alpine、Debian/Ubuntu 和 RHEL/Fedora 系系统";;
     esac
 }
 require_platform() {
     package_manager >/dev/null || return 1
-    command -v systemctl >/dev/null && [ -d /run/systemd/system ] ||
-        fail "需要正在运行的 systemd"
+    select_init
 }
 install_dependencies() {
     local manager command missing=false
-    for command in curl python3 flock useradd install mktemp; do
+    for command in curl python3 flock useradd install mktemp nologin; do
         command -v "$command" >/dev/null || missing=true
     done
     if [ "$missing" = false ] && { [ -s /etc/ssl/certs/ca-certificates.crt ] || [ -s /etc/pki/tls/certs/ca-bundle.crt ]; }; then
@@ -46,6 +82,8 @@ install_dependencies() {
         apt-get update &&
         DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
             curl python3 ca-certificates coreutils util-linux passwd
+    elif [ "$manager" = apk ]; then
+        apk add --no-cache bash curl python3 ca-certificates coreutils util-linux shadow || return 1
     else
         local packages=(python3 ca-certificates util-linux shadow-utils)
         command -v curl >/dev/null || packages+=(curl)
@@ -293,6 +331,14 @@ validate_config() {
     env XRAY_LOCATION_ASSET="$assets" "$core" run -test -config "$config"
 }
 assert_service_layout() {
+    if [ "$INIT_SYSTEM" = openrc ]; then
+        # Accept only this manager's generated service; conf.d overrides may alter its identity or command.
+        [ ! -s "$OPENRC_CONF" ] && [ ! -L "$OPENRC_FILE" ] &&
+            cmp -s "$OPENRC_FILE" <(SERVICE_USER=xray SERVICE_GROUP=$(id -gn xray) create_service /dev/stdout) || {
+            fail "OpenRC 服务与本脚本模板不一致，或存在 conf.d 覆盖，停止操作"; return 1;
+        }
+        return 0
+    fi
     local command
     command=$(systemctl show "$SERVICE" -p ExecStart --value) || return 1
     if [[ "$command" != *"$BINARY "* || "$command" != *"$CONFIG_FILE "* || "$command" == *"-confdir"* ]]; then
@@ -301,6 +347,11 @@ assert_service_layout() {
     fi
 }
 service_identity() {
+    if [ "$INIT_SYSTEM" = openrc ]; then
+        SERVICE_USER=xray
+        SERVICE_GROUP=$(id -gn "$SERVICE_USER") || return 1
+        return 0
+    fi
     SERVICE_USER=$(systemctl show "$SERVICE" -p User --value) || return 1
     SERVICE_USER=${SERVICE_USER:-root}
     SERVICE_GROUP=$(systemctl show "$SERVICE" -p Group --value) || return 1
@@ -358,17 +409,22 @@ write_clients() {
 show_logs() {
     if [ "${1:-}" = follow ]; then
         trap ':' INT
-        journalctl -u "$SERVICE" -f -n 30
+        if [ "$INIT_SYSTEM" = openrc ]; then tail -n 30 -F "$LOG_FILE"
+        else journalctl -u "$SERVICE" -f -n 30; fi
         trap 'exit 130' INT
         return 0
     fi
-    journalctl -u "$SERVICE" -n 30 --no-pager
+    if [ "$INIT_SYSTEM" = openrc ]; then
+        [ -f "$LOG_FILE" ] && tail -n 30 "$LOG_FILE"
+    else journalctl -u "$SERVICE" -n 30 --no-pager; fi
 }
 restart_service() {
     assert_service_layout && validate_config "$BINARY" "$CONFIG_FILE" || return 1
-    systemctl restart "$SERVICE" || return 1
+    if [ "$INIT_SYSTEM" = openrc ] && ! is_running >/dev/null 2>&1; then
+        service_action start || return 1
+    else service_action restart || return 1; fi
     sleep 2
-    if ! is_running; then
+    if ! is_running >/dev/null 2>&1; then
         show_logs
         fail "服务未保持运行，请检查日志"
         return 1
@@ -376,6 +432,36 @@ restart_service() {
 }
 create_service() {
     local file=$1
+    if [ "$INIT_SYSTEM" = openrc ]; then
+        cat >"$file" <<EOF
+#!/sbin/openrc-run
+# Managed by Xray.sh
+name="Xray"
+description="Xray proxy service"
+supervisor="supervise-daemon"
+command="$BINARY"
+command_args="run -config $CONFIG_FILE"
+command_user="$SERVICE_USER:$SERVICE_GROUP"
+pidfile="/run/xray.pid"
+respawn_delay=3
+respawn_max=0
+capabilities="cap_net_bind_service+eip"
+no_new_privs="yes"
+output_log="$LOG_FILE"
+error_log="$LOG_FILE"
+export XRAY_LOCATION_ASSET="$ASSET_DIR"
+depend() {
+    need net
+    after firewall
+}
+start_pre() {
+    checkpath --directory --mode 0750 --owner "$SERVICE_USER:$SERVICE_GROUP" "${LOG_FILE%/*}" || return 1
+    checkpath --file --mode 0640 --owner "$SERVICE_USER:$SERVICE_GROUP" "$LOG_FILE" || return 1
+    "\$command" run -test -config "$CONFIG_FILE"
+}
+EOF
+        return $?
+    fi
     cat >"$file" <<EOF
 [Unit]
 Description=Xray proxy service
@@ -401,7 +487,7 @@ WantedBy=multi-user.target
 EOF
 }
 install_xray() (
-    if is_installed || systemctl cat "$SERVICE" >/dev/null 2>&1; then
+    if is_installed || service_action exists; then
         fail "检测到已有 Xray 或配置，请选择 9 更新；安装不会覆盖已有配置"
         return 1
     fi
@@ -417,7 +503,9 @@ install_xray() (
         validate_config "$stage/xray" "$stage/config.json" "$stage" &&
         prepare_clients "$stage/config.json" "$stage/xray" "$stage" || return 1
     if ! id xray >/dev/null 2>&1; then
-        useradd --system --user-group --no-create-home --shell /usr/sbin/nologin xray || return 1
+        local nologin
+        nologin=$(command -v nologin) || { fail "缺少 nologin"; return 1; }
+        useradd --system --user-group --no-create-home --shell "$nologin" xray || return 1
     fi
     [ "$(id -u xray)" != 0 ] || { fail "xray 服务账号不能是 root"; return 1; }
     SERVICE_USER=xray
@@ -430,12 +518,14 @@ install_xray() (
             atomic_write "$stage/$data" "$ASSET_DIR/$data" 644 root:root || return 1
         fi
     done
+    local unit_mode=644
+    [ "$INIT_SYSTEM" != openrc ] || unit_mode=755
     atomic_write "$stage/config.json" "$CONFIG_FILE" 640 "root:$SERVICE_GROUP" &&
         write_clients "$stage" &&
         atomic_write "$stage/xray" "$BINARY" 755 root:root &&
         create_service "$stage/xray.service" &&
-        atomic_write "$stage/xray.service" "$UNIT_FILE" 644 root:root || return 1
-    systemctl daemon-reload && systemctl enable "$SERVICE" && restart_service || return 1
+        atomic_write "$stage/xray.service" "$UNIT_FILE" "$unit_mode" root:root || return 1
+    service_action reload && service_action enable && restart_service || return 1
     printf 'Xray 安装完成\n'
     cat "$CLIENT_FILE"
 )
@@ -475,14 +565,20 @@ uninstall_xray() {
     read -r -p '确认卸载 Xray 并删除配置？[y/N]: ' answer || return 0
     [[ "$answer" = y || "$answer" = Y ]] || return 0
     require_platform && assert_service_layout || return 1
-    systemctl stop "$SERVICE" && systemctl disable "$SERVICE" || return 1
-    rm -f -- "$BINARY" "$UNIT_FILE" /etc/systemd/system/xray@.service || return 1
-    rm -rf -- "$CONFIG_DIR" /etc/systemd/system/xray.service.d /etc/systemd/system/xray@.service.d || return 1
-    systemctl daemon-reload || return 1
+    if is_running >/dev/null 2>&1; then service_action stop || return 1; fi
+    service_action disable || return 1
+    rm -f -- "$BINARY" "$UNIT_FILE" || return 1
+    rm -rf -- "$CONFIG_DIR" || return 1
+    if [ "$INIT_SYSTEM" = systemd ]; then
+        rm -f -- /etc/systemd/system/xray@.service || return 1
+        rm -rf -- /etc/systemd/system/xray.service.d /etc/systemd/system/xray@.service.d || return 1
+    fi
+    service_action reload || return 1
     printf 'Xray 已卸载\n'
 }
 locked() (
     command -v flock >/dev/null || { fail "缺少 flock，请安装 util-linux"; return 1; }
+    mkdir -p -- "${LOCK_FILE%/*}" || return 1
     exec 9>"$LOCK_FILE" || return 1
     flock -n 9 || { fail "已有 Xray 管理操作正在运行"; return 1; }
     "$@"
@@ -490,7 +586,7 @@ locked() (
 show_menu() {
     local installed=false running=false
     is_installed && installed=true
-    is_running && running=true
+    is_running >/dev/null 2>&1 && running=true
     [ ! -t 1 ] || clear
     printf '=== Xray 管理工具 ===\n'
     if "$installed"; then echo '安装状态: 已安装'; else echo '安装状态: 未安装'; fi
@@ -516,8 +612,8 @@ main() {
             1) locked install_xray;;
             2) locked uninstall_xray;;
             3|5) locked restart_service;;
-            4) locked systemctl stop "$SERVICE";;
-            6) systemctl status "$SERVICE" --no-pager -l;;
+            4) locked service_action stop;;
+            6) service_action status;;
             7) show_logs follow;;
             8) locked refresh_clients;;
             9) locked update_xray;;
@@ -530,3 +626,4 @@ main() {
     return 0
 }
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then main "$@"; fi
+

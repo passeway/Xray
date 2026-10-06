@@ -10,7 +10,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        image: [debian:bookworm-slim, ubuntu:24.04, rockylinux:9]
+        image: [debian:bookworm-slim, ubuntu:24.04, rockylinux:9, alpine:3.23]
     steps:
       - uses: actions/checkout@v4
       - name: Download and verify the official core using the manager
@@ -23,10 +23,12 @@ jobs:
         env:
           TEST_IMAGE: ${{ matrix.image }}
         run: |
-          docker run --rm -v "$GITHUB_WORKSPACE:/repo:ro" -v "$RUNNER_TEMP/xray-core:/core:ro" -e XRAY_TEST_BINARY=/core/xray -w /repo "$TEST_IMAGE" bash -ec '
+          docker run --rm -v "$GITHUB_WORKSPACE:/repo:ro" -v "$RUNNER_TEMP/xray-core:/core:ro" -e XRAY_TEST_BINARY=/core/xray -w /repo "$TEST_IMAGE" sh -ec '
             if command -v apt-get >/dev/null; then
               apt-get update
               apt-get install -y --no-install-recommends bash python3 curl openssl ca-certificates coreutils util-linux passwd
+            elif command -v apk >/dev/null; then
+              apk add --no-cache bash python3 curl openssl ca-certificates coreutils util-linux shadow openrc
             else
               dnf install -y python3 openssl ca-certificates util-linux shadow-utils
               command -v curl >/dev/null || dnf install -y curl
@@ -35,3 +37,4 @@ jobs:
             bash -n xray.sh
             python3 -m unittest discover -s tests -v
           '
+

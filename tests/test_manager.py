@@ -51,6 +51,36 @@ export TMPDIR='{self.root}/tmp'
         (self.root/'xray').write_text('original-binary')
         (self.root/'xray').chmod(0o755)
         (self.root/'config/config.json').write_text('{"existing": true}')
+    def test_alpine_package_manager_and_dependencies(self):
+        release=self.root/'os-release'; release.write_text('ID=alpine\n')
+        result=self.shell(f'OS_RELEASE="{release}"; package_manager')
+        self.assertEqual(result.stdout.strip(),'apk')
+        result=self.shell('command() { return 1; }; package_manager() { echo apk; }; apk() { echo "APK:$*"; }; install_dependencies')
+        self.assertIn('APK:add --no-cache',result.stdout)
+        self.assertIn('shadow',result.stdout)
+        self.assertNotIn('upgrade',result.stdout)
+    def test_openrc_service_dispatch(self):
+        result=self.shell('INIT_SYSTEM=openrc; rc-service() { echo "RC:$*"; }; rc-update() { echo "BOOT:$*"; }; service_action start; service_action stop; service_action status; service_action enable; service_action disable')
+        self.assertEqual(result.stdout.splitlines(),['RC:xray start','RC:xray stop','RC:xray status','BOOT:add xray default','BOOT:del xray default'])
+    def test_openrc_template_and_override_guard(self):
+        service=self.root/'service'; conf=self.root/'override'
+        code=f'INIT_SYSTEM=openrc; OPENRC_FILE="{service}"; OPENRC_CONF="{conf}"; SERVICE_USER=xray; SERVICE_GROUP=xray; id() {{ echo xray; }}; '
+        self.shell(code+'create_service "$OPENRC_FILE"; assert_service_layout')
+        subprocess.run(['sh','-n',str(service)],check=True)
+        text=service.read_text()
+        self.assertIn('supervisor="supervise-daemon"',text)
+        self.assertIn('command_user="xray:xray"',text)
+        self.assertIn('"$command" run -test',text)
+        conf.write_text('command=/other')
+        self.shell(code+'assert_service_layout',expected=1)
+        conf.unlink(); service.write_text(text+'\ncommand=/other\n')
+        self.shell(code+'assert_service_layout',expected=1)
+    def test_openrc_logs_and_stopped_start(self):
+        log=self.root/'service.log'; log.write_text('LOG_ENTRY\n')
+        result=self.shell(f'INIT_SYSTEM=openrc; LOG_FILE="{log}"; show_logs')
+        self.assertIn('LOG_ENTRY',result.stdout)
+        result=self.shell('INIT_SYSTEM=openrc; assert_service_layout() { :; }; validate_config() { :; }; sleep() { :; }; count=0; is_running() { count=$((count+1)); [ "$count" -gt 1 ]; }; rc-service() { echo "RC:$*"; }; restart_service')
+        self.assertIn('RC:xray start',result.stdout)
     def test_eof_exits_menu_and_continue(self):
         code='id() { echo 0; }; require_platform() { :; }; is_installed() { return 1; }; is_running() { return 1; }; main'
         for data in ('','invalid\n'):
@@ -214,4 +244,5 @@ class HelperTests(unittest.TestCase):
         self.assertEqual(a['streamSettings']['realitySettings'],b['streamSettings']['realitySettings'])
 
 if __name__=='__main__': unittest.main()
+
 
