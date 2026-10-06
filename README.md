@@ -1,147 +1,120 @@
-<div align="center">
-
 # Xray
 
-**Deployment & Service Management**
+### 部署连接，简化运维。
 
-面向 Linux 的 Xray 部署与管理工具。<br>
-从内核安装到客户端连接，在一个终端入口完成。
+面向 Linux 的 Xray 部署与服务管理工具。一次安装，提供 VLESS Vision、VLESS XHTTP 与 Shadowsocks 2022 三种连接方式。
 
-[![Checks](https://github.com/passeway/Xray/actions/workflows/check.yml/badge.svg?branch=main)](https://github.com/passeway/Xray/actions/workflows/check.yml)
-[![Xray Core](https://img.shields.io/badge/Xray-Core-18181b?style=flat-square)](https://github.com/XTLS/Xray-core)
-![Platform](https://img.shields.io/badge/Linux-AMD64%20%7C%20ARM64-52525b?style=flat-square)
-[![License](https://img.shields.io/github/license/passeway/Xray?style=flat-square&color=52525b)](LICENSE)
+[快速开始](#快速开始) · [连接方式](#连接方式) · [管理服务](#管理服务) · [技术文档](#技术文档) · [反馈问题](https://github.com/passeway/Xray/issues)
 
-[快速开始](#快速开始) · [连接配置](#连接配置) · [运维指南](#运维指南) · [技术参考](#技术参考)
-
-</div>
+[![Build](https://github.com/passeway/Xray/actions/workflows/check.yml/badge.svg?branch=main)](https://github.com/passeway/Xray/actions/workflows/check.yml)
 
 ---
 
-## 概览
+**一个入口，完成部署与维护。**
 
-Xray 将 VLESS + REALITY、Shadowsocks 2022 的部署与 systemd / OpenRC 服务管理整合到一个交互式脚本中。一次安装生成 TCP + Vision、XHTTP 与 SS2022 三组入站，并导出可直接导入客户端的分享链接。
-
-- **三组连接配置** — TCP + Vision、XHTTP 与 SS2022，分别使用独立端口。
-- **内核校验** — 下载官方发行包并验证 SHA256；更新前使用新内核检查现有配置。
-- **自动连接信息** — 生成 UUID、REALITY 密钥、SS2022 密钥、short-id 与 XHTTP 路径，根据公网 IP 的两位国家/地区代码自动命名节点。
-- **统一运维入口** — 管理服务状态、实时日志、内核更新与客户端链接导出。
+官方内核下载与 SHA256 校验、连接凭据生成、客户端链接导出，以及 systemd / OpenRC 服务管理，均由同一个脚本完成。支持 AMD64 与 ARM64，自动使用服务器 IP 的国家/地区代码命名节点。
 
 ## 快速开始
 
-### 环境要求
+以 **root** 身份，在已运行 systemd 或 OpenRC 的服务器上执行。
 
-| 项目 | 支持范围 |
-| :--- | :--- |
-| 操作系统 | Alpine（OpenRC）；Debian / Ubuntu、RHEL / Fedora 系（systemd） |
-| 处理器架构 | AMD64、ARM64 |
-| 执行环境 | root 权限，已安装 `bash` 与 `curl` |
-| 客户端 | 支持所选协议的客户端与内核；SS2022 需支持 AES-128-GCM 2022 |
-
-依赖通过 `apk`、`apt-get`、`dnf` 或 `yum` 按需安装。要求系统已运行 OpenRC 或 systemd；仅安装了相关命令的普通容器不作为部署目标。
-
-### 安装
+**Debian / Ubuntu / RHEL / Fedora 系**  
+需要已安装 Bash 与 curl。
 
 ```bash
 bash <(curl -fsSL https://xray-bay.vercel.app)
 ```
 
-Alpine 默认使用 `ash`，首次运行请先安装 Bash，再使用以下命令：
+**Alpine / OpenRC**  
+兼容 Alpine 默认的 ash 终端。
 
 ```sh
 apk add --no-cache bash curl ca-certificates
 bash -c 'bash <(curl -fsSL https://xray-bay.vercel.app)'
 ```
 
-1. 选择 **1 · 安装 Xray 服务**，自动生成三组节点。
-2. 在云安全组和服务器防火墙中放行两组 VLESS 的 TCP 端口，以及 SS2022 的 TCP/UDP 端口。
-3. 将输出的 `vless://` 或 `ss://` 链接导入客户端。
+选择 **1** 安装，放行对应端口，然后将输出的 `vless://` 或 `ss://` 链接导入客户端。
 
-节点名称前缀自动使用服务器公网 IP 的两位大写国家/地区代码，如 `US`、`JP`、`HK`，无需输入确认。导出名称示例：`US-vless-tcp`、`US-vless-xhttp`、`US-ss2022`。地区查询失败时保留已有名称；新安装回退到公网 IP。
+> 两组 VLESS 各需放行一个 TCP 端口；SS2022 需同时放行其端口的 TCP 和 UDP。端口随机生成，以安装输出为准。
 
-> [!NOTE]
-> 检测到已有程序、配置或服务时，脚本会阻止重复安装。已有安装请使用菜单 **9** 更新内核。
+## 连接方式
 
-## 连接配置
+三组节点默认一同安装，各使用独立端口。选择客户端支持的方式即可。
 
-新安装默认启用以下三组节点，各使用一个独立的随机端口。
-
-| 参数 | VLESS · TCP + Vision | VLESS · XHTTP | Shadowsocks 2022 |
+|  | VLESS Vision | VLESS XHTTP | Shadowsocks 2022 |
 | :--- | :--- | :--- | :--- |
-| 加密 / 安全 | REALITY | REALITY | `2022-blake3-aes-128-gcm` |
-| 放行端口 | TCP | TCP | TCP + UDP |
-| 认证 | UUID + REALITY 密钥 | UUID + REALITY 密钥 | 独立 16 字节预共享密钥 |
-| Flow | `xtls-rprx-vision` | 留空 | 不适用 |
-| 路径 | 不适用 | 随机生成 | 不适用 |
-| 模式 | — | `auto` | — |
-| 默认 SNI | `www.ua.edu` | `www.ua.edu` | 不适用 |
-| 分享链接 | `vless://` | `vless://` | `ss://` |
-| 名称示例 | `US-vless-tcp` | `US-vless-xhttp` | `US-ss2022` |
+| 传输 | TCP + Vision | XHTTP · `auto` | TCP / UDP |
+| 安全配置 | REALITY | REALITY | AES-128-GCM · 2022 |
+| 导出格式 | `vless://` | `vless://` | `ss://` |
+| 节点名称 | `HK-vless-tcp` | `HK-vless-xhttp` | `HK-ss2022` |
 
-两组 VLESS 入站共用本次生成的 UUID、REALITY 密钥对与 short-id。客户端参数应与对应入站保持一致，XHTTP 还需核对路径。
+前缀根据公网 IP 自动识别，例如 `US`、`JP`、`HK`。地区查询失败时保留已有名称，新安装回退到公网 IP，无需输入确认。
 
-SS2022 密钥独立生成，以 Base64 保存；其端口同时监听 TCP 和 UDP。客户端须支持 `2022-blake3-aes-128-gcm`，无需配置 REALITY、SNI 或 Vision Flow。
+<details>
+<summary>连接参数与客户端要求</summary>
 
-### XHTTP 参数选择
+两组 VLESS 共用 UUID、REALITY 密钥对与 short-id，默认 SNI 为 `www.ua.edu`。客户端的地址、端口、UUID、公钥、short-id 和 SNI 应与所选入站一致。
 
-当前配置面向直连 REALITY：保留随机 `path` 与 `mode=auto`，Flow 留空。客户端和服务端路径须一致。按[官方指南](https://github.com/XTLS/Xray-core/discussions/4113)，通常只需配置路径，其余使用默认值。
+- **Vision**：Flow 使用 `xtls-rprx-vision`。
+- **XHTTP**：使用生成的随机路径与 `mode=auto`，Flow 留空。
+- **SS2022**：加密方式为 `2022-blake3-aes-128-gcm`。独立生成 16 字节预共享密钥，以 Base64 保存；不使用 REALITY、SNI 或 Vision Flow。客户端须支持该加密方式。
 
-不额外固定 `host`、XMUX 并发数或缓冲区参数；这些参数应在有明确网络瓶颈或 CDN/反代需求时调整。当前 REALITY 配置不应直接改为 H3；H3 需要另行配置 QUIC/TLS。
+XHTTP 当前面向直连 REALITY，沿用默认 XMUX、并发及缓冲参数。按[官方指南](https://github.com/XTLS/Xray-core/discussions/4113)，通常只需设置路径。CDN、反向代理或 QUIC/H3 需要单独设计配置，不能直接套用当前 REALITY 连接。
 
-### 导出与同步
+</details>
 
-选择菜单 **8**，根据当前服务端配置重新生成客户端链接。查看已保存的链接：
+## 管理服务
 
-```bash
+重新运行安装命令即可进入管理菜单。
+
+| 选项 | 操作 | 选项 | 操作 |
+| :---: | :--- | :---: | :--- |
+| **1** | 安装服务 | **6** | 检查状态 |
+| **2** | 卸载服务与配置 | **7** | 查看实时日志 |
+| **3** | 启动服务 | **8** | 导出客户端链接 |
+| **4** | 停止服务 | **9** | 更新内核 |
+| **5** | 重启服务 | **0** | 退出 |
+
+安装自动配置开机自启。菜单 **3** 在服务已运行时会重启；菜单 **7** 可按 `Ctrl+C` 返回。卸载需要明确确认。
+
+**同步客户端配置**  
+修改服务端配置后，选择 **5** 重启，再选择 **8** 重新导出并导入客户端。查看已保存的链接：
+
+```sh
 cat /usr/local/etc/xray/config.txt
 ```
 
-修改服务端配置后，先选择 **5** 重启服务，再选择 **8** 导出并重新导入客户端。导出时会查询 IP 国家/地区代码并更新节点前缀；IPv6 地址自动使用带方括号的链接格式。
+**更新内核**  
+选择 **9**，新内核通过现有配置校验后才替换。更新保留端口、UUID、密钥和入站配置，不为旧安装自动增加协议。脚本不创建备份或自动回滚。
 
-## 运维指南
-
-重新运行安装命令，即可进入管理菜单。
-
-| 选项 | 功能 | 行为 |
-| :---: | :--- | :--- |
-| `1` | 安装服务 | 下载内核、生成三组节点并启用服务 |
-| `2` | 卸载服务 | 确认后删除服务与配置 |
-| `3` | 启动服务 | 校验配置并启动；已运行时会重启 |
-| `4` | 停止服务 | 停止当前服务 |
-| `5` | 重启服务 | 校验配置后重启 |
-| `6` | 检查状态 | 查看当前服务管理器的状态 |
-| `7` | 查看日志 | 跟踪实时日志，`Ctrl+C` 返回 |
-| `8` | 查看配置 | 重新生成并显示客户端分享链接 |
-| `9` | 更新内核 | 校验新内核、替换并重启服务 |
-| `0` | 退出 | 退出管理工具 |
-
-Alpine 自动使用 OpenRC，其他支持的系统使用 systemd；菜单操作保持一致。
-
-### 更新行为
-
-菜单 **9** 仅更新内核，保留现有端口、UUID、密钥及服务端配置，沿用原服务运行用户。旧安装不会因更新内核自动增加 SS2022；菜单 **8** 仅导出现有入站的链接。安装只补齐所需依赖，不执行整机软件升级。
-
-脚本不创建备份，也不提供自动回滚。新内核在替换前须通过配置校验；替换后的重启若失败，脚本会报告错误并保留日志供排查。
+## 技术文档
 
 <details>
-<summary><strong>常用 systemd 命令</strong></summary>
+<summary><strong>平台与依赖</strong> — 支持范围、运行环境</summary>
 
-```bash
-# 服务控制
+支持 Alpine（OpenRC）、Debian / Ubuntu 及 RHEL / Fedora 系（systemd），架构为 AMD64 / ARM64。
+
+依赖通过 `apk`、`apt-get`、`dnf` 或 `yum` 按需安装，不执行整机软件升级。服务器必须已运行相应服务管理器；仅安装管理命令的普通容器不作为部署目标。
+
+检测到已有程序、配置或服务时，脚本会阻止重复安装。
+
+</details>
+
+<details>
+<summary><strong>服务与日志</strong> — systemd、OpenRC</summary>
+
+**systemd**
+
+```sh
 systemctl start xray
 systemctl stop xray
 systemctl restart xray
-
-# 状态与日志
 systemctl status xray --no-pager
 journalctl -u xray -n 50 --no-pager
 journalctl -u xray -f
 ```
 
-</details>
-
-<details>
-<summary><strong>常用 OpenRC 命令（Alpine）</strong></summary>
+**OpenRC**
 
 ```sh
 rc-service xray start
@@ -149,61 +122,67 @@ rc-service xray stop
 rc-service xray restart
 rc-service xray status
 rc-update add xray default
-
 tail -n 50 /var/log/xray/xray.log
 tail -F /var/log/xray/xray.log
 ```
 
-OpenRC 使用 `supervise-daemon` 守护进程并自动重启。日志保存在 `/var/log/xray/xray.log`，需按使用量自行安排轮转。卸载保留日志。
+OpenRC 使用 `supervise-daemon` 守护进程并自动重启。文件日志需按使用量安排轮转，卸载时保留。
 
 </details>
 
-## 技术参考
-
-### 文件布局
+<details>
+<summary><strong>文件与权限</strong> — 配置位置、服务身份</summary>
 
 | 路径 | 用途 |
 | :--- | :--- |
-| `/usr/local/bin/xray` | Xray 内核 |
+| `/usr/local/bin/xray` | 内核 |
 | `/usr/local/etc/xray/config.json` | 服务端配置 |
-| `/usr/local/etc/xray/config.txt` | 客户端分享链接 |
-| `/usr/local/etc/xray/client-meta.json` | 公网地址与节点名称前缀 |
-| `/usr/local/share/xray` | 内核资源文件 |
+| `/usr/local/etc/xray/config.txt` | 客户端链接 |
+| `/usr/local/etc/xray/client-meta.json` | 公网地址与名称前缀 |
+| `/usr/local/share/xray` | 内核资源 |
 | `/etc/systemd/system/xray.service` | systemd 服务单元 |
-| `/etc/init.d/xray` | OpenRC 服务脚本（Alpine） |
-| `/var/log/xray/xray.log` | OpenRC 服务日志 |
+| `/etc/init.d/xray` | OpenRC 服务脚本 |
+| `/var/log/xray/xray.log` | OpenRC 日志 |
 
-### 运行权限
+新安装使用独立 `xray` 用户；更新沿用现有服务身份。配置目录权限为 `750`，服务端配置为 `640`，客户端链接和地址元数据为 `600`。
 
-新安装使用独立的 `xray` 服务用户。配置目录权限为 `750`，服务端配置为 `640`，由 root 与服务运行组访问；客户端链接和地址元数据文件权限为 `600`。
+REALITY 私钥留在服务端，客户端使用公钥。国家/地区代码通过 `ipwho.is` 查询服务器公网 IP。
 
-OpenRC 管理仅接受本脚本生成的服务定义；检测到 `/etc/conf.d/xray` 非空覆盖文件或服务脚本被修改时，会停止更新、重启和卸载，避免操作不匹配的服务。
+OpenRC 仅接受本脚本生成的服务定义。检测到服务脚本被修改或 `/etc/conf.d/xray` 非空时，会停止更新、重启和卸载，避免操作不匹配的服务。
 
-REALITY 私钥留在服务端，客户端链接仅包含对应公钥。地区命名通过 `ipwho.is` 查询服务器公网 IP，不影响协议参数。
+</details>
 
-### 验证范围
-
-仓库 CI 在 Alpine、Debian、Ubuntu 与 Rocky Linux 容器中检查脚本语法、失败处理和配置导出，并使用官方内核验证 TCP + Vision、XHTTP 与 SS2022 的 TCP 代理流量。
-
-SS2022 原生 UDP 还需实际网络验证。容器测试不覆盖真实 VPS 的 systemd / OpenRC 开机自启与 ARM64 实机运行。
-
-## 故障排查
+<details>
+<summary><strong>故障排查</strong> — 连通性、配置同步</summary>
 
 | 现象 | 检查项 |
 | :--- | :--- |
-| 服务无法启动 | 服务状态、配置校验结果与服务日志 |
-| 客户端连接超时 | 监听端口、云安全组、服务器防火墙 |
-| REALITY 握手失败 | UUID、公钥、short-id 与 SNI |
-| TCP 可用，XHTTP 不可用 | 客户端内核支持、XHTTP 路径、Flow 是否留空 |
-| SS2022 无法连接 | 客户端是否支持指定加密方式、密钥和端口是否一致 |
-| SS2022 TCP 可用，UDP 不可用 | 同端口 UDP 放行情况、客户端 UDP 支持与网络连通性 |
-| 客户端仍显示旧配置 | 使用菜单 **8** 重新导出，再导入客户端 |
+| 服务无法启动 | 服务状态、配置校验结果、日志 |
+| 连接超时 | 监听端口、云安全组、服务器防火墙 |
+| REALITY 握手失败 | UUID、公钥、short-id、SNI |
+| XHTTP 无法连接 | 客户端支持、路径一致、Flow 留空 |
+| SS2022 无法连接 | 加密方式、密钥、端口 |
+| SS2022 仅 UDP 不通 | UDP 端口放行、客户端支持、网络连通性 |
+| 客户端配置未更新 | 菜单 **8** 重新导出并导入 |
 
-提交问题时，请附上操作系统、Xray 版本、客户端名称与版本，以及隐藏凭据后的相关日志。
+旧版 OpenRC 安装若提示“已有 Xray 管理操作正在运行”，先退出菜单并执行 `rc-service xray stop` 释放旧进程继承的锁，再运行最新版脚本。不要删除锁文件来绕过并发保护。
 
-[提交 Issue](https://github.com/passeway/Xray/issues) · [查看 CI](https://github.com/passeway/Xray/actions/workflows/check.yml)
+</details>
+
+<details>
+<summary><strong>验证范围</strong> — 自动测试与实机边界</summary>
+
+CI 配置覆盖 Alpine、Debian、Ubuntu 与 Rocky Linux 容器，检查语法、失败处理、配置导出，以及官方内核下三组节点的 TCP 代理流量。当前运行结果见页面顶部的构建状态。
+
+已有用户反馈 Alpine 实机节点连接与卸载可用。SS2022 原生 UDP、系统重启后的自启及 ARM64 实机行为仍需针对部署环境验证。
+
+</details>
 
 ---
 
-本项目为独立的安装与管理工具，基于 [XTLS/Xray-core](https://github.com/XTLS/Xray-core)。官方安装项目见 [XTLS/Xray-install](https://github.com/XTLS/Xray-install)，许可证见 [LICENSE](LICENSE)。
+**项目与支持**  
+基于 [XTLS/Xray-core](https://github.com/XTLS/Xray-core) 的独立安装与管理工具。
 
+[报告问题](https://github.com/passeway/Xray/issues) · [构建记录](https://github.com/passeway/Xray/actions/workflows/check.yml) · [官方安装项目](https://github.com/XTLS/Xray-install) · [许可证](LICENSE)
+
+反馈问题时请附上系统、内核和客户端版本，以及隐藏 UUID、密钥等凭据后的日志。
