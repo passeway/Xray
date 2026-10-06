@@ -1,0 +1,37 @@
+name: Xray manager checks
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        image: [debian:bookworm-slim, ubuntu:24.04, rockylinux:9]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download and verify the official core using the manager
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/xray-core"
+          source ./Xray.sh
+          download_core "$RUNNER_TEMP/xray-core"
+      - name: Syntax, failure recovery and real proxy traffic
+        env:
+          TEST_IMAGE: ${{ matrix.image }}
+        run: |
+          docker run --rm -v "$GITHUB_WORKSPACE:/repo:ro" -v "$RUNNER_TEMP/xray-core:/core:ro" -e XRAY_TEST_BINARY=/core/xray -w /repo "$TEST_IMAGE" bash -ec '
+            if command -v apt-get >/dev/null; then
+              apt-get update
+              apt-get install -y --no-install-recommends bash python3 curl openssl ca-certificates coreutils util-linux passwd
+            else
+              dnf install -y python3 openssl ca-certificates util-linux shadow-utils
+              command -v curl >/dev/null || dnf install -y curl
+            fi
+            bash -n Xray.sh
+            bash -n xray.sh
+            python3 -m unittest discover -s tests -v
+          '
